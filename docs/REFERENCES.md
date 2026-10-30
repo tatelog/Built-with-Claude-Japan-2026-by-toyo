@@ -118,3 +118,12 @@
 - 日本建築学会『鉄筋コンクリート構造計算規準・同解説』
 - 日本建築学会『鉄筋コンクリート構造保有水平耐力計算規準・同解説』（第2版 2021年）
 - 『建築物の構造関係技術基準解説書』（2020年版）
+
+---
+
+## 8. 判断用 AI モデル
+
+| 資料 | 内容 | URL |
+|---|---|---|
+| TypeSafe AI「Introducing System One Models and Jev」 | 型の決まった判断を確率付きで高速に返すモデル。入力はテキスト・構造化データ（画像は未対応）。早期アクセス | https://typesafe.ai/blog/introducing-system-one-models-and-jev |
+| TypeSafe AI ドキュメント | API の使い方 | https://docs.typesafe.ai |
