@@ -158,7 +158,8 @@ const PAGES=[
   {id:"top",no:"V-00",name:"概要"},
   {id:"storyboard",no:"V-01",name:"絵コンテ",cnt:"scenes"},
   {id:"scenario",no:"V-02",name:"シナリオ",cnt:"scenes"},
-  {id:"viewer",no:"V-03",name:"ビューワーとコメント"}
+  {id:"viewer",no:"V-03",name:"ビューワーとコメント"},
+  {id:"materials",no:"V-04",name:"素材集め",cnt:"mat"}
 ];
 const STATUS=["未着手","案","確定"];
 const READ_CPS=5; // 日本語ナレーションの読み上げ目安：1秒あたり約5文字（1分300字）
@@ -171,7 +172,7 @@ const fmt0=s=>{s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+Strin
 const segColor=i=>`var(--s${Math.min(6,i+1)})`;
 const jaLen=t=>String(t||"").replace(/\s/g,"").length;
 
-const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],style:null,me:null,cm:null,ca:null,caState:"",threads:[],cmode:false,
+const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],materials:[],matFilter:"すべて",style:null,me:null,cm:null,ca:null,caState:"",threads:[],cmode:false,
   editing:{}, cutId:null, localUrl:"", localName:"", cur:0, names:{}};
 
 // ---------- 接続 ----------
@@ -199,7 +200,7 @@ function start(){
     if(!db){ setErr("共有データを使えません（サインインが必要です）。"); render(); return; }
     st.db=db; render();
     const timer=setTimeout(()=>{ if(!st.ready) setErr("共有データにまだ届きません。通信を確認してください。"); },10000);
-    let n=0; const got=()=>{ if(++n>=2){ clearTimeout(timer); st.ready=true; if(st.err.startsWith("共有データにまだ")) st.err=""; } };
+    let n=0; const got=()=>{ if(++n>=3){ clearTimeout(timer); st.ready=true; if(st.err.startsWith("共有データにまだ")) st.err=""; } };
     const sub=(name,order,key)=>{ let first=true;
       db.collection(name).orderBy(order,"asc").onSnapshot(s=>{
         st[key]=s.docs.map(d=>({id:d.id,...d.data()}));
@@ -209,7 +210,7 @@ function start(){
       },e=>{ clearTimeout(timer); setErr("読み込めませんでした（"+e.code+"）"); render(); });
     };
     db.doc("meta/style").onSnapshot(d=>{ st.style=d.exists?d.data():null; render(); },()=>{});
-    sub("scenes","order","scenes"); sub("cuts","createdAt","cuts");
+    sub("scenes","order","scenes"); sub("cuts","createdAt","cuts"); sub("materials","order","materials");
   }).catch(()=>{ setErr("共有データを使えません。"); render(); });
 }
 
@@ -287,6 +288,26 @@ function pageStoryboard(){
   let h=`<p class="note">場面ごとの映像の中身と尺。帯の色は場面の色です。「書き込む」で各欄を直せます。</p>${tonePanel()}${tcStrip()}<div style="height:14px"></div>`;
   if(!st.scenes.length) return h+loadingOr(`<div class="empty">場面がまだありません。Claude が筋書きの6場面を入れると、ここにコマが並びます。</div>`);
   return h+`<div class="boards">${st.scenes.map(boardCard).join("")}</div>`;
+}
+
+// ---------- V-04 素材集め ----------
+const MSTATUS=["候補","権利確認済み","使う","使わない"];
+const RIGHT_CLS=r=>/パブリック|PD|CC0|CC BY|自社|自作/.test(r||"")?"ok":/要確認|不明/.test(r||"")?"warn":/不可|使わない/.test(r||"")?"ng":"";
+function pageMaterials(){
+  const groups=["すべて",...new Set(st.materials.map(m=>m.group).filter(Boolean))];
+  const list=st.materials.filter(m=>st.matFilter==="すべて"||m.group===st.matFilter);
+  let h=`<p class="note">動画に使う写真・図面の候補。権利の表示を1点ずつ確かめてから「権利確認済み」にします。外部の画像はこのページに直接表示できないため、リンク先で見てください。</p>
+    <div class="row" style="margin:6px 0 12px"><label class="note" for="matFilter">分類</label><select id="matFilter" style="width:auto">${groups.map(g=>`<option${g===st.matFilter?" selected":""}>${esc(g)}</option>`).join("")}</select>
+    ${MSTATUS.map(x=>`<span class="chip">${x} ${st.materials.filter(m=>(m.status||"候補")===x).length}</span>`).join("")}</div>`;
+  if(!list.length) return h+loadingOr(`<div class="empty">候補はまだありません。</div>`);
+  h+=`<div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)"><table style="border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px">
+    <tr style="background:var(--muted)"><th style="text-align:left;padding:8px 10px">素材</th><th style="text-align:left;padding:8px 10px">場面</th><th style="text-align:left;padding:8px 10px">所蔵・出典</th><th style="text-align:left;padding:8px 10px">権利</th><th style="text-align:left;padding:8px 10px">状態</th></tr>`+
+    list.map(m=>`<tr style="border-top:1px solid var(--rule)" data-mid="${esc(m.id)}"><td style="padding:8px 10px;vertical-align:top;min-width:0">${/^https:\/\//.test(m.url||"")?`<a href="${esc(m.url)}" target="_blank" rel="noopener"><b>${esc(m.title)}</b></a>`:`<b>${esc(m.title)}</b>`}${m.note?`<div class="note" style="white-space:pre-wrap">${esc(m.note)}</div>`:""}</td>
+      <td style="padding:8px 10px;vertical-align:top;white-space:nowrap">${esc(m.scene||"")}</td>
+      <td style="padding:8px 10px;vertical-align:top">${esc(m.source||"")}</td>
+      <td style="padding:8px 10px;vertical-align:top"><span class="chip ${RIGHT_CLS(m.rights)}">${esc(m.rights||"")}</span></td>
+      <td style="padding:8px 10px;vertical-align:top"><select aria-label="状態" data-mstatus="${esc(m.id)}" style="width:auto;font-size:12.5px"${dis()}>${MSTATUS.map(x=>`<option${x===(m.status||"候補")?" selected":""}>${x}</option>`).join("")}</select></td></tr>`).join("")+`</table></div>`;
+  return h;
 }
 
 // ---------- V-02 シナリオ ----------
@@ -418,7 +439,7 @@ function seek(t){ const v=$("#vid"); st.cur=+t; if(v){ try{ v.currentTime=+t; v.
 // ---------- 描画 ----------
 let curPage="top";
 function renderNav(){
-  const c={scenes:st.scenes.length};
+  const c={scenes:st.scenes.length, mat:st.materials.length};
   $("#navList").innerHTML=PAGES.map(p=>`<a class="nav" href="#${p.id}"${p.id===curPage?' aria-current="page"':""}><span class="no">${p.no}</span>${esc(p.name)}${p.cnt&&st.ready?`<span class="cnt">${c[p.cnt]}</span>`:""}</a>`).join("");
 }
 function render(){
@@ -433,7 +454,7 @@ function render(){
   }
   render.force=false;
   let body="";
-  if(p.id==="top") body=pageTop(); else if(p.id==="storyboard") body=pageStoryboard(); else if(p.id==="scenario") body=pageScenario(); else body=pageViewer();
+  if(p.id==="top") body=pageTop(); else if(p.id==="storyboard") body=pageStoryboard(); else if(p.id==="scenario") body=pageScenario(); else if(p.id==="materials") body=pageMaterials(); else body=pageViewer();
   $("#view").innerHTML=head(p, p.id==="top"?"準備中":"")+body;
   setErr(st.err);
   if(p.id==="viewer"){ bindVideo(); }
@@ -500,6 +521,8 @@ document.addEventListener("submit",async e=>{
 });
 document.addEventListener("change",async e=>{
   const t=e.target;
+  if(t.id==="matFilter"){ st.matFilter=t.value; t.blur(); render.force=true; render(); return; }
+  if(t.dataset.mstatus){ const id=t.dataset.mstatus; const v=t.value; t.blur(); await write(()=>st.db.collection("materials").doc(id).update({status:v}),"更新しました"); return; }
   if(t.id==="localFile"&&t.files[0]){ if(st.localUrl) URL.revokeObjectURL(st.localUrl); st.localUrl=URL.createObjectURL(t.files[0]); st.localName=t.files[0].name; st.cur=0; render.force=true; deferred=false; t.blur(); render(); return; }
   if(t.dataset.frame&&t.files[0]&&st.assets){
     const id=t.dataset.frame; const file=t.files[0];
