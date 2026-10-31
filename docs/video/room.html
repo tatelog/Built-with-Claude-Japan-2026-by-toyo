@@ -93,6 +93,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .kv{display:grid;grid-template-columns:5.2em minmax(0,1fr);gap:3px 10px;font-size:13px}
 .kv dt{color:var(--ink-2)} .kv dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
 .edit{display:grid;gap:8px;border-top:1px dashed var(--rule);padding-top:10px}
+.chipbtn{cursor:pointer;font:inherit;font-size:12px;padding:2px 10px}
+.chipbtn[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:1px;font-weight:700}
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px;margin-bottom:8px}
 .gi{margin:0;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;overflow:hidden;display:grid;grid-template-rows:auto 1fr;min-width:0}
 .gi img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--muted)}
@@ -176,7 +178,7 @@ const fmt0=s=>{s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+Strin
 const segColor=i=>`var(--s${Math.min(6,i+1)})`;
 const jaLen=t=>String(t||"").replace(/\s/g,"").length;
 
-const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],materials:[],matFilter:"すべて",style:null,me:null,cm:null,ca:null,caState:"",threads:[],cmode:false,
+const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],materials:[],mf:{group:"すべて",apply:"すべて",check:"すべて"},style:null,me:null,cm:null,ca:null,caState:"",threads:[],cmode:false,
   editing:{}, cutId:null, localUrl:"", localName:"", cur:0, names:{}};
 
 // ---------- 接続 ----------
@@ -295,24 +297,42 @@ function pageStoryboard(){
 }
 
 // ---------- V-04 素材集め ----------
-const MSTATUS=["候補","権利確認済み","使う","使わない"];
+const MSTATUS=["候補","使う","使わない"];
+const APPLY=["不要","必要","要確認","—"];
+const CHECK=["確認済み","確認中","未着手"];
+const APPLY_CLS={"不要":"ok","必要":"ng","要確認":"warn"};
+const CHECK_CLS={"確認済み":"ok","確認中":"warn","未着手":""};
 const RIGHT_CLS=r=>/パブリック|PD|CC0|CC BY|自社|自作/.test(r||"")?"ok":/要確認|不明/.test(r||"")?"warn":/不可|使わない/.test(r||"")?"ng":"";
+const TH=t=>`<th style="text-align:left;padding:8px 10px;white-space:nowrap">${t}</th>`;
+const TD=(x,extra="")=>`<td style="padding:8px 10px;vertical-align:top${extra}">${x}</td>`;
+const sel=(name,id,opts,val)=>`<select aria-label="${name}" data-mfield="${name}" data-mid="${esc(id)}" style="width:auto;font-size:12.5px"${dis()}>${opts.map(x=>`<option${x===val?" selected":""}>${x}</option>`).join("")}</select>`;
+function matOk(m){ const f=st.mf;
+  return (f.group==="すべて"||m.group===f.group)&&(f.apply==="すべて"||(m.apply||"要確認")===f.apply)&&(f.check==="すべて"||(m.check||"未着手")===f.check); }
 function pageMaterials(){
+  const f=st.mf;
   const groups=["すべて",...new Set(st.materials.map(m=>m.group).filter(Boolean))];
-  const list=st.materials.filter(m=>st.matFilter==="すべて"||m.group===st.matFilter);
-  let h=`<p class="note">動画に使う写真・図面の候補。権利の表示を1点ずつ確かめてから「権利確認済み」にします。外部の画像はこのページに直接表示できないため、リンク先で見てください。</p>
-    <div class="row" style="margin:6px 0 12px"><label class="note" for="matFilter">分類</label><select id="matFilter" style="width:auto">${groups.map(g=>`<option${g===st.matFilter?" selected":""}>${esc(g)}</option>`).join("")}</select>
-    ${MSTATUS.map(x=>`<span class="chip">${x} ${st.materials.filter(m=>(m.status||"候補")===x).length}</span>`).join("")}</div>`;
-  if(!list.length) return h+loadingOr(`<div class="empty">候補はまだありません。</div>`);
+  const list=st.materials.filter(matOk);
+  const cnt=(k,v,d)=>st.materials.filter(m=>(m[k]||d)===v).length;
+  const fsel=(id,label,opts,val)=>`<label class="note" for="${id}">${label}</label><select id="${id}" style="width:auto">${["すべて",...opts].map(g=>`<option${g===val?" selected":""}>${esc(g)}</option>`).join("")}</select>`;
+  let h=`<p class="note">動画に使う写真・図面の候補。「申請」は使う前に持ち主への申請や許諾が要るか、「確認」は権利の根拠をこちらで確かめ終えたかを表します。チップを押すと、その状態だけに絞り込めます。</p>
+    <div class="grid2" style="margin:8px 0 12px">
+      <div class="panel" style="display:grid;gap:6px"><b style="font-size:13px">申請</b><div class="row">${APPLY.filter(x=>x!=="—").map(x=>`<button type="button" class="chipbtn chip ${APPLY_CLS[x]||""}" data-mf="apply" data-v="${x}" aria-pressed="${f.apply===x}">${x} ${cnt("apply",x,"要確認")}</button>`).join("")}</div></div>
+      <div class="panel" style="display:grid;gap:6px"><b style="font-size:13px">確認</b><div class="row">${CHECK.map(x=>`<button type="button" class="chipbtn chip ${CHECK_CLS[x]||""}" data-mf="check" data-v="${x}" aria-pressed="${f.check===x}">${x} ${cnt("check",x,"未着手")}</button>`).join("")}</div></div>
+    </div>
+    <div class="row" style="margin:0 0 12px">${fsel("mfGroup","分類",groups.slice(1),f.group)}${fsel("mfApply","申請",APPLY,f.apply)}${fsel("mfCheck","確認",CHECK,f.check)}${(f.group+f.apply+f.check)!=="すべてすべてすべて"?`<button type="button" class="ghost small" data-mfclear="1">絞り込みを解除</button>`:""}<span class="note">${list.length}件</span></div>`;
+  if(!list.length) return h+loadingOr(`<div class="empty">条件に合う素材はありません。</div>`);
+  const chips=m=>`<span class="chip ${APPLY_CLS[m.apply]||""}">申請 ${esc(m.apply||"要確認")}</span> <span class="chip ${CHECK_CLS[m.check]||""}">${esc(m.check||"未着手")}</span> <span class="chip">${esc(m.status||"候補")}</span>`;
   const pics=list.filter(m=>m.img);
-  h+=`<h2 style="margin-top:8px">画像 <span class="note">${pics.length}点</span></h2>`+(pics.length?`<div class="gal">${pics.map(m=>`<figure class="gi"><a href="/_blob/${esc(m.img)}" target="_blank" rel="noopener"><img src="/_blob/${esc(m.img)}" alt="${esc(m.title)}" loading="lazy"></a><figcaption><b>${esc(m.title)}</b><span class="note">${esc(m.source||"")}</span><span><span class="chip ${RIGHT_CLS(m.rights)}">${esc(m.rights||"")}</span> <span class="chip">${esc(m.status||"候補")}</span></span>${m.credit?`<span class="note">クレジット：${esc(m.credit)}</span>`:""}</figcaption></figure>`).join("")}</div>`:`<div class="empty">まだ画像はありません。下の一覧の「画像を貼る」から追加できます。</div>`);
-  h+=`<h2>一覧</h2><div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)"><table style="border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px">
-    <tr style="background:var(--muted)"><th style="text-align:left;padding:8px 10px">素材</th><th style="text-align:left;padding:8px 10px">場面</th><th style="text-align:left;padding:8px 10px">所蔵・出典</th><th style="text-align:left;padding:8px 10px">権利</th><th style="text-align:left;padding:8px 10px">状態</th></tr>`+
-    list.map(m=>`<tr style="border-top:1px solid var(--rule)" data-mid="${esc(m.id)}"><td style="padding:8px 10px;vertical-align:top;min-width:0">${/^https:\/\//.test(m.url||"")?`<a href="${esc(m.url)}" target="_blank" rel="noopener"><b>${esc(m.title)}</b></a>`:`<b>${esc(m.title)}</b>`}${m.note?`<div class="note" style="white-space:pre-wrap">${esc(m.note)}</div>`:""}</td>
-      <td style="padding:8px 10px;vertical-align:top;white-space:nowrap">${esc(m.scene||"")}</td>
-      <td style="padding:8px 10px;vertical-align:top">${esc(m.source||"")}</td>
-      <td style="padding:8px 10px;vertical-align:top"><span class="chip ${RIGHT_CLS(m.rights)}">${esc(m.rights||"")}</span></td>
-      <td style="padding:8px 10px;vertical-align:top"><div style="display:grid;gap:6px"><select aria-label="状態" data-mstatus="${esc(m.id)}" style="width:auto;font-size:12.5px"${dis()}>${MSTATUS.map(x=>`<option${x===(m.status||"候補")?" selected":""}>${x}</option>`).join("")}</select>${st.assets&&!/^使わない/.test(m.rights||"")?`<label class="note" style="cursor:pointer">${m.img?"画像を差し替える":"画像を貼る"}<input type="file" accept="image/png,image/jpeg,image/webp" data-mimg="${esc(m.id)}" style="font-size:11px"></label>`:""}</div></td></tr>`).join("")+`</table></div>`;
+  h+=`<h2 style="margin-top:8px">画像 <span class="note">${pics.length}点</span></h2>`+(pics.length?`<div class="gal">${pics.map(m=>`<figure class="gi"><a href="/_blob/${esc(m.img)}" target="_blank" rel="noopener"><img src="/_blob/${esc(m.img)}" alt="${esc(m.title)}" loading="lazy"></a><figcaption><b>${esc(m.title)}</b><span class="note">${esc(m.source||"")}</span><span>${chips(m)}</span>${m.credit?`<span class="note">クレジット：${esc(m.credit)}</span>`:""}</figcaption></figure>`).join("")}</div>`:`<div class="empty">この条件の画像はありません。下の一覧の「画像を貼る」から追加できます。</div>`);
+  h+=`<h2>一覧</h2><div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)"><table style="border-collapse:collapse;width:100%;min-width:980px;font-size:13.5px">
+    <tr style="background:var(--muted)">${TH("素材")}${TH("場面")}${TH("所蔵・出典")}${TH("権利")}${TH("申請")}${TH("確認")}${TH("採否")}</tr>`+
+    list.map(m=>`<tr style="border-top:1px solid var(--rule)">`+
+      TD(`${/^https:\/\//.test(m.url||"")?`<a href="${esc(m.url)}" target="_blank" rel="noopener"><b>${esc(m.title)}</b></a>`:`<b>${esc(m.title)}</b>`}${m.note?`<div class="note" style="white-space:pre-wrap">${esc(m.note)}</div>`:""}${m.basis?`<div class="note" style="white-space:pre-wrap">根拠：${esc(m.basis)}</div>`:""}`,";min-width:0")+
+      TD(esc(m.scene||""),";white-space:nowrap")+TD(esc(m.source||""))+
+      TD(`<span class="chip ${RIGHT_CLS(m.rights)}">${esc(m.rights||"")}</span>`)+
+      TD(sel("apply",m.id,APPLY,m.apply||"要確認"))+TD(sel("check",m.id,CHECK,m.check||"未着手"))+
+      TD(`<div style="display:grid;gap:6px">${sel("status",m.id,MSTATUS,m.status||"候補")}${st.assets&&m.status!=="使わない"?`<label class="note" style="cursor:pointer">${m.img?"画像を差し替える":"画像を貼る"}<input type="file" accept="image/png,image/jpeg,image/webp" data-mimg="${esc(m.id)}" style="font-size:11px"></label>`:""}</div>`)+
+      `</tr>`).join("")+`</table></div>`;
   return h;
 }
 
@@ -493,6 +513,8 @@ document.addEventListener("click",async e=>{
   const t=e.target.closest("button,a"); if(!t) return;
   if(t.dataset.seek!=null){ seek(t.dataset.seek); return; }
   if(t.dataset.scene&&t.tagName==="A"){ e.preventDefault(); const id=t.dataset.scene; location.hash="storyboard"; setTimeout(()=>{const el=document.getElementById("sc-"+id); if(el) el.scrollIntoView({block:"start"});},0); return; }
+  if(t.dataset.mf){ const k=t.dataset.mf, v=t.dataset.v; st.mf[k]=st.mf[k]===v?"すべて":v; render.force=true; render(); return; }
+  if(t.dataset.mfclear){ st.mf={group:"すべて",apply:"すべて",check:"すべて"}; render.force=true; render(); return; }
   if(t.id==="commentHere"){ composeAt(st.cur); return; }
   if(t.dataset.cut){ st.cutId=t.dataset.cut; if(st.localUrl){ URL.revokeObjectURL(st.localUrl); st.localUrl=""; } st.cur=0; render.force=true; render(); return; }
   const act=t.dataset.act; if(!act) return;
@@ -527,12 +549,12 @@ document.addEventListener("submit",async e=>{
 });
 document.addEventListener("change",async e=>{
   const t=e.target;
-  if(t.id==="matFilter"){ st.matFilter=t.value; t.blur(); render.force=true; render(); return; }
+  if(t.id==="mfGroup"||t.id==="mfApply"||t.id==="mfCheck"){ st.mf[{mfGroup:"group",mfApply:"apply",mfCheck:"check"}[t.id]]=t.value; t.blur(); render.force=true; render(); return; }
+  if(t.dataset.mfield){ const id=t.dataset.mid, k=t.dataset.mfield, v=t.value; t.blur(); await write(()=>st.db.collection("materials").doc(id).update({[k]:v}),"更新しました"); return; }
   if(t.dataset.mimg&&t.files[0]&&st.assets){ const id=t.dataset.mimg, f=t.files[0];
     try{ const r=await st.assets.upload(f,{type:/^image\/(png|jpeg|webp)$/.test(f.type)?f.type:"image/jpeg"}); await write(()=>st.db.collection("materials").doc(id).update({img:r.id}),"画像を貼りました"); }
     catch(err){ setErr(err&&err.code==="too_large"?"画像が大きすぎます（20MB まで）。":"画像を上げられませんでした。PNG か JPEG を選んでください。"); }
     return; }
-  if(t.dataset.mstatus){ const id=t.dataset.mstatus; const v=t.value; t.blur(); await write(()=>st.db.collection("materials").doc(id).update({status:v}),"更新しました"); return; }
   if(t.id==="localFile"&&t.files[0]){ if(st.localUrl) URL.revokeObjectURL(st.localUrl); st.localUrl=URL.createObjectURL(t.files[0]); st.localName=t.files[0].name; st.cur=0; render.force=true; deferred=false; t.blur(); render(); return; }
   if(t.dataset.frame&&t.files[0]&&st.assets){
     const id=t.dataset.frame; const file=t.files[0];
