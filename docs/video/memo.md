@@ -162,3 +162,15 @@ DWG は「図面」の意味で名付けられたが、この作品は「描く�
 - 音声と動画の分離：動画の音を音トラックに切り出す（動画そのものは無音で並ぶ）
 - 書き出し：ブラウザで実時間に録画（webm）。ビューワーに版として追加、または端末に保存
 - 制約：音のファイルは m4a・mp4・webm（ページの保存先が mp3・wav を受け付けないため）。書き出しはパソコンの Chrome が確実
+
+## 11. 冒頭 v5 と、エージェント操作の窓口
+
+- 編集ページで編集を複数持てるようにした（共有データ edits/<id>）。v5 は edits/v5。「作業の記録」に手順が残る
+- v5 は編集ページの部品で組んだ：文字カード2枚（.dwg → Drawing／図面）→ 手の時代のモンタージュ12カット（カメラワークを1カットずつ変更）→ 部品動画「デジタイザ〜CAD」（v4 から切り出し、音は音トラックに分離）→ 世界の建築と昭和初期の東京10カット → 現代の差し替え枠
+- 効果音トラック（合成の仮音）は編集データのタイミングから作成（docs/video/tools/render_edl.py）
+- 高画質版は同じ編集データから Python で書き出し（docs/video/tools/render_edl.py、編集データの写しは docs/video/tools/edit_v5.json）
+- Chrome の拡張機能・AI エージェント用の操作窓口（WebMCP もどき）
+  - 編集ページ下部「操作の窓口」に JSON で命令を書いて実行（例：{"tool":"addClip","args":{"img":"…","cam":"barrel"}}）
+  - WebMCP（navigator.modelContext）があれば movieMaker_… の名前で同じ操作を登録
+  - ページのスクリプトからは window.movieMaker で呼べる
+  - 操作：listProjects / openProject / newProject / getProject / listMaterials / listCuts / listCameraWorks / addClip / updateClip / setCamera / moveClip / removeClip / addAudio / note / play / pause / seek / exportVideo

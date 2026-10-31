@@ -111,6 +111,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .edThumb span{font-size:10.5px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .edGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
 @media (max-width:900px){.ed{grid-template-columns:minmax(0,1fr)}}
+.edLogList{margin:0;padding-left:1.4em;font-size:13px;display:grid;gap:2px;max-height:220px;overflow-y:auto}
+#agentBox summary{cursor:pointer}
 .chipbtn{cursor:pointer;font:inherit;font-size:12px;padding:2px 10px}
 .chipbtn[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:1px;font-weight:700}
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px;margin-bottom:8px}
@@ -236,7 +238,7 @@ function start(){
     };
     db.doc("meta/style").onSnapshot(d=>{ st.style=d.exists?d.data():null; render(); },()=>{});
     sub("scenes","order","scenes"); sub("cuts","createdAt","cuts"); sub("materials","order","materials");
-    db.doc("edits/main").onSnapshot(d=>{ if(d.exists) edRemote(d.data()); },()=>{});
+    db.collection("edits").onSnapshot(s=>edOnList(s.docs.map(d=>Object.assign({id:d.id},d.data()))),()=>{});
   }).catch(()=>{ setErr("共有データを使えません。"); render(); });
 }
 
@@ -494,7 +496,7 @@ function edTotal(){ return edDoc().clips.reduce((a,c)=>a+Math.max(0.1,+c.dur||0)
 function edStarts(){ let a=0; return edDoc().clips.map(c=>{const s=a; a+=Math.max(0.1,+c.dur||0); return s;}); }
 function edSave(){ ED.dirty=true; clearTimeout(ED.saveT); ED.saveT=setTimeout(async()=>{
   const d=edDoc(); d.updatedAt=new Date().toISOString(); ED.remoteAt=d.updatedAt;
-  const ok=await write(()=>st.db.doc("edits/main").set(JSON.parse(JSON.stringify(d))));
+  const ok=await write(()=>st.db.doc("edits/"+(ED.pid||"main")).set(JSON.parse(JSON.stringify(d))));
   if(ok){ ED.dirty=false; const s=$("#edSaved"); if(s) s.textContent="保存しました"; } },700); }
 function edRemote(data){ // 共有データの更新を受け取る（自分が編集中のときは上書きしない）
   if(ED.dirty||!data) return; if(data.updatedAt&&data.updatedAt===ED.remoteAt) return;
@@ -605,6 +607,7 @@ const PX=40; // タイムラインの1秒あたりの幅
 function pageEditor(){
   const d=edDoc();
   return `<p class="note">素材集めの写真やビューワーの動画を並べて、1本の動画にします。編集の中身は自動で保存され、同じ内容から Claude が高画質版も作れます。</p>
+  <div class="row" id="edProj" style="margin-bottom:10px"></div>
   <div class="ed">
     <div class="edLeft" style="min-width:0">
       <div class="edStage"><canvas id="edCanvas" width="${CW}" height="${CH}"></canvas></div>
@@ -622,6 +625,8 @@ function pageEditor(){
       <div class="edTL" id="edTL"></div>
       <h2>音</h2>
       <div id="edAudio"></div>
+      <h2>作業の記録</h2>
+      <div id="edLog"></div>
     </div>
     <div style="min-width:0;display:grid;gap:14px;align-content:start">
       <div class="panel" id="edInsp"></div>
@@ -632,6 +637,7 @@ function pageEditor(){
         <div class="note" style="margin:10px 0 6px">動画（ビューワーの版）</div>
         <div id="edLibVid" style="display:grid;gap:6px"></div>
       </div>
+      ${agentPanel()}
     </div>
   </div>`;
 }
@@ -695,8 +701,8 @@ function edAudioUI(){
     <button type="button" class="danger small" data-auddel="${k}">外す</button></div></div>`).join("")+`</div>`:`<div class="note">音はまだありません。</div>`)+
     (st.assets?`<label class="f" style="margin-top:8px">音を足す（m4a・mp4・webm、20MB まで。iPhone のボイスメモの m4a も使えます）<input type="file" id="edAudFile" accept=".m4a,audio/mp4,audio/x-m4a,video/mp4,video/webm,audio/webm"></label>`:`<div class="note" style="margin-top:6px">音を足せるのは編集権限のある人だけです。</div>`);
 }
-function edMount(){ ED.mounted=true; edLibrary(); edTimeline(); edInspector(); edAudioUI(); edOut(); edDraw(ED.t); }
-function edRefresh(){ edLibrary(); if(!ED.dirty){ edTimeline(); } edAudioUI(); }
+function edMount(){ ED.mounted=true; edProjUI(); edLog(); edLibrary(); edTimeline(); edInspector(); edAudioUI(); edOut(); edDraw(ED.t); }
+function edRefresh(){ edLog(); edLibrary(); if(!ED.dirty){ edTimeline(); } edAudioUI(); }
 function edChange(fn,redrawTL=true){ if(!canWrite()){ setErr("この表示では編集できません。"); return; } fn(edDoc()); edSave(); if(redrawTL) edTimeline(); edDraw(ED.t); }
 function edAddClip(c){ edChange(d=>{ const at=ED.sel>=0?ED.sel+1:d.clips.length; d.clips.splice(at,0,c); ED.sel=at; }); edInspector(); }
 document.addEventListener("click",e=>{
@@ -708,6 +714,8 @@ document.addEventListener("click",e=>{
   const a=t.dataset.ed; if(!a) return;
   if(a==="play"){ if(ED.playing) edStop(); else edPlay(); return; }
   if(a==="stop"){ edStop(); ED.t=0; edDraw(0); return; }
+  if(a==="newproj"){ try{ MM.newProject({}); flash("新しい編集を作りました"); }catch(e){ setErr(e.message); } return; }
+  if(a==="agentrun"){ (async()=>{ const o=$("#agentOut"); o.textContent="実行中…"; o.textContent=await agentRun($("#agentCmd").value); })(); return; }
   if(a==="addtext"){ edAddClip({id:newId(),kind:"text",textJa:"Drawing",textEn:"",bg:"black",typing:true,dur:2.5,trans:"cut"}); return; }
   if(a==="export"){ edExport(); return; }
   if(a==="dl"){ (async()=>{ const dl=await window.claude.use("downloads"); if(!dl){ setErr("この表示では保存できません。"); return; }
@@ -739,12 +747,89 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("change",async e=>{
   if(curPage!=="editor") return; const t=e.target;
+  if(t.id==="edProjSel"){ edOpen(t.value); return; }
   if(t.id==="edAspect"){ edChange(d=>{ d.aspect=t.value; },false); return; }
   if(t.id==="edAudFile"&&t.files[0]&&st.assets){ const f=t.files[0]; t.disabled=true;
     const type=/webm$/i.test(f.name)||/webm/.test(f.type)?"video/webm":"video/mp4";
     try{ const r=await st.assets.upload(f,{type}); edChange(d=>{ d.audio.push({id:newId(),asset:r.id,name:f.name,start:0,vol:0.8}); },false); edAudioUI(); flash("音を足しました"); }
     catch(err){ setErr(err&&err.code==="too_large"?"20MB を超えています。":err&&err.code==="unsupported_type"?"この形式は使えません。m4a・mp4・webm にしてください。":"音を上げられませんでした。"); t.disabled=false; } }
 });
+
+// ---------- 複数の編集・作業の記録・エージェント用の操作窓口（WebMCP もどき） ----------
+ED.pid=null; st.edits=[];
+function edProjects(){ return st.edits.slice().sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))); }
+function edOpen(id){ const p=st.edits.find(x=>x.id===id); ED.pid=id; ED.dirty=false; ED.remoteAt=""; ED.doc=p?JSON.parse(JSON.stringify(p)):edDefault(); delete ED.doc.id; ED.sel=-1; ED.t=0;
+  try{ localStorage.setItem("edPid",id); }catch(_){} if(curPage==="editor"&&ED.mounted){ edProjUI(); edTimeline(); edInspector(); edAudioUI(); edLog(); edDraw(0); } }
+function edOnList(list){ st.edits=list;
+  if(!ED.pid){ let want=null; try{ want=localStorage.getItem("edPid"); }catch(_){} const ps=edProjects(); ED.pid=(ps.find(p=>p.id===want)||ps[0]||{id:"main"}).id; }
+  const cur=st.edits.find(x=>x.id===ED.pid); if(cur){ const c=JSON.parse(JSON.stringify(cur)); delete c.id; edRemote(c); }
+  if(curPage==="editor"&&ED.mounted){ edProjUI(); edLog(); } }
+function edProjUI(){ const box=$("#edProj"); if(!box) return; const ps=edProjects(); const d=edDoc();
+  box.innerHTML=`<label class="note" for="edProjSel">編集</label><select id="edProjSel" style="width:auto">${(ps.length?ps:[{id:ED.pid||"main",title:"冒頭"}]).map(p=>`<option value="${esc(p.id)}"${p.id===ED.pid?" selected":""}>${esc(p.title||p.id)}（${esc(p.id)}）</option>`).join("")}</select>
+  <button type="button" class="ghost small" data-ed="newproj">新しい編集</button>`; }
+function edLog(){ const box=$("#edLog"); if(!box) return; const L=(edDoc().log||[]).slice(-30);
+  box.innerHTML=L.length?`<ol class="edLogList">${L.map(x=>`<li><span class="mono note">${esc(String(x.at||"").slice(11,16))}</span> <b>${esc(x.by||"")}</b> ${esc(x.text||"")}</li>`).join("")}</ol>`:`<div class="note">まだ記録はありません。</div>`; }
+// --- エージェント用の操作（Chrome の拡張機能・WebMCP から呼ぶ）
+function apiGuard(){ if(!canWrite()) throw new Error("この表示では編集できません（共有データに書き込めません）"); }
+function apiLog(text,by){ const d=edDoc(); d.log=(d.log||[]).concat([{at:new Date().toISOString(),by:by||"エージェント",text:String(text).slice(0,200)}]).slice(-200); }
+const MM={
+  listProjects:()=>edProjects().map(p=>({id:p.id,title:p.title||"",clips:(p.clips||[]).length,updatedAt:p.updatedAt||""})),
+  openProject:({id})=>{ edOpen(String(id)); return MM.getProject(); },
+  newProject:({id,title})=>{ apiGuard(); const pid=String(id||("p"+Date.now().toString(36))).replace(/[^A-Za-z0-9_-]/g,"").slice(0,40)||"p1"; ED.pid=pid; ED.doc=Object.assign(edDefault(),{title:title||pid}); apiLog("新しい編集を作成"); edSave(); if(ED.mounted){ edProjUI(); edTimeline(); edInspector(); edLog(); } return {id:pid}; },
+  getProject:()=>{ const d=edDoc(); return {id:ED.pid,title:d.title,aspect:d.aspect,total:+edTotal().toFixed(2),clips:d.clips.map((c,i)=>Object.assign({index:i},c)),audio:d.audio}; },
+  listMaterials:()=>st.materials.filter(m=>m.img).map(m=>({img:m.img,title:m.title,rights:m.rights,check:m.check})),
+  listCuts:()=>st.cuts.map(c=>({asset:c.asset,label:c.label})),
+  listCameraWorks:()=>CAM.map(x=>({key:x.k,name:x.n,desc:x.d})),
+  addClip:(a)=>{ apiGuard(); const kind=a.kind||(a.img?"image":a.asset?"video":"text"); const c={id:newId(),kind,dur:+a.dur||1,trans:a.trans||"cut",textJa:a.textJa||"",textEn:a.textEn||"",title:a.title||""};
+    if(kind==="image"){ c.img=a.img; c.mono=!!a.mono; } if(kind==="video"){ c.asset=a.asset; c.in=+a.in||0; c.speed=+a.speed||1; } if(kind==="text"){ c.bg=a.bg||"black"; c.typing=!!a.typing; }
+    Object.assign(c,{z0:1,z1:1,x0:0,x1:0,y0:0,y1:0,rot0:0,rot1:0});
+    if(a.cam){ const p=CAM.find(x=>x.k===a.cam); if(p){ Object.assign(c,p.v); c.cam=p.k; } }
+    const d=edDoc(); const at=a.index==null?d.clips.length:Math.max(0,Math.min(d.clips.length,+a.index)); d.clips.splice(at,0,c); ED.sel=at;
+    apiLog(`カット${at+1}を追加：${c.title||c.textJa||kind}${a.cam?"（"+(CAM.find(x=>x.k===a.cam)||{}).n+"）":""}`); edSave(); if(ED.mounted){ edTimeline(); edInspector(); edLog(); edDraw(ED.t); } return {index:at}; },
+  updateClip:({index,patch})=>{ apiGuard(); const d=edDoc(); const c=d.clips[+index]; if(!c) throw new Error("そのカットはありません"); Object.assign(c,patch||{});
+    if(patch&&patch.cam){ const p=CAM.find(x=>x.k===patch.cam); if(p) Object.assign(c,p.v); }
+    apiLog(`カット${+index+1}を変更`); edSave(); if(ED.mounted){ edTimeline(); edInspector(); edLog(); edDraw(ED.t); } return {ok:true}; },
+  setCamera:({index,key})=>MM.updateClip({index,patch:{cam:key,ms:0,me:1}}),
+  moveClip:({from,to})=>{ apiGuard(); const d=edDoc(); const [c]=d.clips.splice(+from,1); d.clips.splice(+to,0,c); apiLog(`カット${+from+1}を${+to+1}番目へ移動`); edSave(); if(ED.mounted){ edTimeline(); edLog(); } return {ok:true}; },
+  removeClip:({index})=>{ apiGuard(); const d=edDoc(); d.clips.splice(+index,1); apiLog(`カット${+index+1}を削除`); edSave(); if(ED.mounted){ edTimeline(); edInspector(); edLog(); } return {ok:true}; },
+  addAudio:({asset,name,start,inPoint,len,vol})=>{ apiGuard(); edDoc().audio.push({id:newId(),asset,name:name||"音",start:+start||0,in:+inPoint||0,len:+len||0,vol:vol==null?0.8:+vol}); apiLog(`音を追加：${name||"音"}`); edSave(); if(ED.mounted){ edAudioUI(); edLog(); } return {ok:true}; },
+  note:({text})=>{ apiGuard(); apiLog(text); edSave(); if(ED.mounted) edLog(); return {ok:true}; },
+  play:({from}={})=>{ edPlay(from==null?undefined:+from); return {ok:true}; },
+  pause:()=>{ edStop(); return {t:ED.t}; },
+  seek:({t})=>{ if(ED.playing) edStop(); ED.t=+t||0; edSyncMedia(ED.t,false); edDraw(ED.t); return {t:ED.t}; },
+  exportVideo:()=>{ edExport(); return {started:true,seconds:+edTotal().toFixed(1)}; },
+};
+const MM_TOOLS=[
+  ["listProjects","編集の一覧",{}],["openProject","編集を開く",{id:{type:"string"}}],["newProject","新しい編集を作る",{id:{type:"string"},title:{type:"string"}}],
+  ["getProject","開いている編集の中身（カット・音）",{}],["listMaterials","使える写真の一覧（素材集めで画像のあるもの）",{}],["listCuts","使える動画の一覧（ビューワーの版）",{}],
+  ["listCameraWorks","カメラワークの一覧",{}],
+  ["addClip","カットを足す。写真は img、動画は asset、文字カードは textJa。cam でカメラワーク",{kind:{type:"string",enum:["image","video","text"]},img:{type:"string"},asset:{type:"string"},title:{type:"string"},dur:{type:"number"},cam:{type:"string"},mono:{type:"boolean"},textJa:{type:"string"},textEn:{type:"string"},typing:{type:"boolean"},bg:{type:"string"},trans:{type:"string",enum:["cut","fade"]},index:{type:"number"},in:{type:"number"},speed:{type:"number"}}],
+  ["updateClip","カットの設定を変える（patch に変えたい項目）",{index:{type:"number"},patch:{type:"object"}}],
+  ["setCamera","カットのカメラワークを変える",{index:{type:"number"},key:{type:"string"}}],
+  ["moveClip","カットを移動",{from:{type:"number"},to:{type:"number"}}],["removeClip","カットを削除",{index:{type:"number"}}],
+  ["addAudio","音を足す（asset は動画か音のファイル）",{asset:{type:"string"},name:{type:"string"},start:{type:"number"},inPoint:{type:"number"},len:{type:"number"},vol:{type:"number"}}],
+  ["note","作業の記録に一言残す",{text:{type:"string"}}],
+  ["play","再生",{from:{type:"number"}}],["pause","一時停止",{}],["seek","再生位置へ移動",{t:{type:"number"}}],["exportVideo","動画に書き出す",{}],
+];
+window.movieMaker=Object.freeze(Object.assign({},MM,{tools:MM_TOOLS.map(t=>t[0])}));
+(function registerWebMCP(){ // Chrome の WebMCP（navigator.modelContext）があれば登録する
+  try{ const mc=navigator.modelContext; if(!mc) return;
+    const tools=MM_TOOLS.map(([name,description,props])=>({name:"movieMaker_"+name,description,inputSchema:{type:"object",properties:props},
+      execute:async(args)=>{ try{ const r=await MM[name](args||{}); return {content:[{type:"text",text:JSON.stringify(r)}]}; }catch(e){ return {content:[{type:"text",text:"エラー："+e.message}],isError:true}; } }}));
+    if(typeof mc.provideContext==="function") mc.provideContext({tools}); else if(typeof mc.registerTool==="function") tools.forEach(t=>mc.registerTool(t));
+  }catch(_){} })();
+async function agentRun(text){ let cmds; try{ cmds=JSON.parse(text); }catch(e){ return "JSON として読めません："+e.message; }
+  if(!Array.isArray(cmds)) cmds=[cmds]; const out=[];
+  for(const c of cmds){ const f=MM[c.tool]; if(!f){ out.push({tool:c.tool,error:"その操作はありません"}); continue; }
+    try{ out.push({tool:c.tool,result:await f(c.args||{})}); }catch(e){ out.push({tool:c.tool,error:e.message}); } }
+  return JSON.stringify(out,null,1); }
+function agentPanel(){ return `<details class="panel" id="agentBox"><summary><b>操作の窓口（Chrome の拡張機能・AI エージェント用）</b></summary>
+  <div class="note" style="margin:6px 0">ここに JSON で命令を書いて「実行」を押すと、編集を操作できます。例：<code>{"tool":"addClip","args":{"img":"…","dur":0.8,"cam":"barrel"}}</code>。複数なら配列で。<br>
+  使える操作：${MM_TOOLS.map(t=>`<code title="${esc(t[1])}">${t[0]}</code>`).join(" ")}<br>
+  WebMCP に対応したブラウザでは <code>movieMaker_…</code> という名前で同じ操作が登録されます。ページのスクリプトからは <code>window.movieMaker</code> でも呼べます。</div>
+  <textarea id="agentCmd" rows="4" aria-label="エージェントの命令（JSON）" placeholder='{"tool":"getProject"}'></textarea>
+  <div class="row" style="margin-top:6px"><button type="button" data-ed="agentrun">実行</button></div>
+  <pre id="agentOut" class="mono" style="white-space:pre-wrap;max-height:240px;overflow:auto;font-size:12px;margin:6px 0 0"></pre></details>`; }
 
 // ---------- 描画 ----------
 let curPage="top";
