@@ -171,7 +171,7 @@ const fmt0=s=>{s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+Strin
 const segColor=i=>`var(--s${Math.min(6,i+1)})`;
 const jaLen=t=>String(t||"").replace(/\s/g,"").length;
 
-const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],me:null,cm:null,ca:null,caState:"",threads:[],cmode:false,
+const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],style:null,me:null,cm:null,ca:null,caState:"",threads:[],cmode:false,
   editing:{}, cutId:null, localUrl:"", localName:"", cur:0, names:{}};
 
 // ---------- 接続 ----------
@@ -208,6 +208,7 @@ function start(){
         render();
       },e=>{ clearTimeout(timer); setErr("読み込めませんでした（"+e.code+"）"); render(); });
     };
+    db.doc("meta/style").onSnapshot(d=>{ st.style=d.exists?d.data():null; render(); },()=>{});
     sub("scenes","order","scenes"); sub("cuts","createdAt","cuts");
   }).catch(()=>{ setErr("共有データを使えません。"); render(); });
 }
@@ -258,7 +259,7 @@ function boardCard(s,i){
   let h=`<article class="board" id="sc-${esc(s.id)}"><div class="frame">${img}<span class="tcb">${esc(s.tcIn||"")}–${esc(s.tcOut||"")}${len!=null?` ・ ${len}秒`:""}</span></div>
     <div class="body"><div class="row"><span class="sw" style="background:${segColor(i)}"></span><span class="eyebrow">場面 ${i+1} ・ ${esc(s.era||"")}</span><span class="chip ${stc}" style="margin-left:auto">${esc(s.status||"未着手")}</span></div>
     <h3>${esc(s.title||"")}</h3>
-    <dl class="kv"><dt>映像</dt><dd>${esc(s.picture||"—")}</dd><dt>画面の文字</dt><dd>${esc(s.onscreen||"—")}</dd><dt>素材</dt><dd>${esc(s.materials||"—")}</dd><dt>撮り方</dt><dd>${esc(s.shot||"—")}</dd></dl>`;
+    <dl class="kv"><dt>映像</dt><dd>${esc(s.picture||"—")}</dd><dt>画面の文字</dt><dd>${esc(s.onscreen||"—")}</dd><dt>素材</dt><dd>${esc(s.materials||"—")}</dd><dt>撮り方</dt><dd>${esc(s.shot||"—")}</dd>${s.ref?`<dt>参考</dt><dd>${esc(s.ref)}</dd>`:""}</dl>`;
   if(ed){
     h+=`<form class="edit" data-form="board" data-id="${esc(s.id)}">
       <div class="row" style="flex-wrap:nowrap"><label class="f" style="flex:1">開始<input id="b-in-${esc(s.id)}" name="tcIn" value="${esc(s.tcIn||"")}" placeholder="0:00"></label><label class="f" style="flex:1">終了<input id="b-out-${esc(s.id)}" name="tcOut" value="${esc(s.tcOut||"")}" placeholder="0:20"></label><label class="f" style="flex:1.3">状態<select id="b-st-${esc(s.id)}" name="status">${STATUS.map(x=>`<option${x===(s.status||"未着手")?" selected":""}>${x}</option>`).join("")}</select></label></div>
@@ -267,6 +268,7 @@ function boardCard(s,i){
       <label class="f">画面の文字<textarea id="b-on-${esc(s.id)}" name="onscreen">${esc(s.onscreen||"")}</textarea></label>
       <label class="f">素材<textarea id="b-ma-${esc(s.id)}" name="materials">${esc(s.materials||"")}</textarea></label>
       <label class="f">撮り方（カメラ位置・尺）<textarea id="b-sh-${esc(s.id)}" name="shot">${esc(s.shot||"")}</textarea></label>
+      <label class="f">参考（手本にする広告の手法）<textarea id="b-rf-${esc(s.id)}" name="ref">${esc(s.ref||"")}</textarea></label>
       ${st.assets?`<label class="f">コマ画像（PNG・JPEG、20MB まで）<input id="b-fr-${esc(s.id)}" type="file" accept="image/png,image/jpeg,image/webp" data-frame="${esc(s.id)}"></label>`:`<div class="note">コマ画像を貼れるのは編集権限のある人だけです。</div>`}
       <div class="row"><button type="submit">保存</button><button type="button" class="ghost" data-act="cancel" data-key="b:${esc(s.id)}">閉じる</button></div></form>`;
   } else {
@@ -274,8 +276,15 @@ function boardCard(s,i){
   }
   return h+`</div></article>`;
 }
+function tonePanel(){
+  const y=st.style; if(!y) return "";
+  const pts=Array.isArray(y.points)?y.points:[]; const refs=Array.isArray(y.refs)?y.refs:[];
+  return `<section class="panel" style="margin-bottom:14px;display:grid;gap:8px"><div class="eyebrow">トーン</div><b style="font-size:16px">${esc(y.title||"")}</b>
+    ${pts.length?`<ul style="margin:0;padding-left:1.2em">${pts.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+    ${refs.length?`<div class="note" style="display:grid;gap:4px">${refs.map(r=>`<div><b>${/^https:\/\//.test(r.url||"")?`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a>`:esc(r.name)}</b>：${esc(r.note||"")}</div>`).join("")}</div>`:""}</section>`;
+}
 function pageStoryboard(){
-  let h=`<p class="note">場面ごとの映像の中身と尺。帯の色は場面の色です。「書き込む」で各欄を直せます。</p>${tcStrip()}<div style="height:14px"></div>`;
+  let h=`<p class="note">場面ごとの映像の中身と尺。帯の色は場面の色です。「書き込む」で各欄を直せます。</p>${tonePanel()}${tcStrip()}<div style="height:14px"></div>`;
   if(!st.scenes.length) return h+loadingOr(`<div class="empty">場面がまだありません。Claude が筋書きの6場面を入れると、ここにコマが並びます。</div>`);
   return h+`<div class="boards">${st.scenes.map(boardCard).join("")}</div>`;
 }
