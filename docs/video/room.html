@@ -75,12 +75,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .tc .bar{position:relative;height:30px;border-radius:4px;overflow:hidden;background:var(--muted)}
 .tc .seg{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 6px;color:var(--sheet);font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-decoration:none;border-right:1px solid var(--sheet)}
 .tc .ticks{position:relative;height:16px;margin-top:3px}
+#tl{cursor:pointer}
 .tc .ticks span{position:absolute;transform:translateX(-50%);font-family:var(--f-mono);font-size:10.5px;color:var(--ink-2)}
 .tc .ticks span:first-child{transform:none}
 .tc .ticks span:last-child{transform:translateX(-100%)}
 .tc .marks{position:absolute;inset:0;pointer-events:none}
-.tc .mk{position:absolute;top:-2px;bottom:-2px;width:3px;margin-left:-1px;background:var(--ink);border-radius:2px;pointer-events:auto;cursor:pointer;border:0;padding:0}
-.tc .mk.done{background:var(--ink-2);opacity:.5}
 .tc .head{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--check);pointer-events:none}
 
 /* 絵コンテ */
@@ -117,14 +116,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .screen .ph{color:#9aa8b1;font-size:13.5px;padding:16px;text-align:center}
 .now{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin:10px 0 6px}
 .now .t{font-family:var(--f-mono);font-size:20px;font-variant-numeric:tabular-nums}
-.notes{display:grid;gap:8px;max-height:560px;overflow-y:auto;padding-right:2px}
-.nt{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:9px 11px;display:grid;gap:4px;min-width:0}
-.nt.done{opacity:.6}
-.nt .top{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12px;color:var(--ink-2)}
-.nt .top button.tcbtn{font-family:var(--f-mono);font-size:12px;padding:0 7px;background:transparent;color:var(--accent)}
-.nt .txt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
-.nt.done .txt{text-decoration:line-through}
-.nt .ops{display:flex;gap:6px;justify-content:flex-end}
 .cutlist{display:grid;gap:6px}
 .cut{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:7px 10px}
 .cut[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
@@ -167,7 +158,7 @@ const PAGES=[
   {id:"top",no:"V-00",name:"概要"},
   {id:"storyboard",no:"V-01",name:"絵コンテ",cnt:"scenes"},
   {id:"scenario",no:"V-02",name:"シナリオ",cnt:"scenes"},
-  {id:"viewer",no:"V-03",name:"ビューワーとコメント",cnt:"open"}
+  {id:"viewer",no:"V-03",name:"ビューワーとコメント"}
 ];
 const STATUS=["未着手","案","確定"];
 const READ_CPS=5; // 日本語ナレーションの読み上げ目安：1秒あたり約5文字（1分300字）
@@ -180,7 +171,7 @@ const fmt0=s=>{s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+Strin
 const segColor=i=>`var(--s${Math.min(6,i+1)})`;
 const jaLen=t=>String(t||"").replace(/\s/g,"").length;
 
-const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],notes:[],me:null,
+const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],me:null,cm:null,ca:null,caState:"",threads:[],cmode:false,
   editing:{}, cutId:null, localUrl:"", localName:"", cur:0, names:{}};
 
 // ---------- 接続 ----------
@@ -203,11 +194,12 @@ function start(){
   if(!window.claude||!window.claude.use){ setErr("この表示では共有データを使えません。"); return; }
   window.claude.use("user").then(async u=>{ st.user=u; if(u){ try{st.me=await u.id();}catch(_){} } render(); });
   window.claude.use("assets").then(a=>{ st.assets=a; render(); });
+  window.claude.use("comments").then(c=>{ st.cm=c; syncAnchoring(); render(); });
   window.claude.use("db").then(db=>{
     if(!db){ setErr("共有データを使えません（サインインが必要です）。"); render(); return; }
     st.db=db; render();
     const timer=setTimeout(()=>{ if(!st.ready) setErr("共有データにまだ届きません。通信を確認してください。"); },10000);
-    let n=0; const got=()=>{ if(++n>=3){ clearTimeout(timer); st.ready=true; if(st.err.startsWith("共有データにまだ")) st.err=""; } };
+    let n=0; const got=()=>{ if(++n>=2){ clearTimeout(timer); st.ready=true; if(st.err.startsWith("共有データにまだ")) st.err=""; } };
     const sub=(name,order,key)=>{ let first=true;
       db.collection(name).orderBy(order,"asc").onSnapshot(s=>{
         st[key]=s.docs.map(d=>({id:d.id,...d.data()}));
@@ -216,7 +208,7 @@ function start(){
         render();
       },e=>{ clearTimeout(timer); setErr("読み込めませんでした（"+e.code+"）"); render(); });
     };
-    sub("scenes","order","scenes"); sub("cuts","createdAt","cuts"); sub("notes","t","notes");
+    sub("scenes","order","scenes"); sub("cuts","createdAt","cuts");
   }).catch(()=>{ setErr("共有データを使えません。"); render(); });
 }
 
@@ -227,10 +219,8 @@ function tcStrip(opts={}){
     const href=opts.link?` href="#${opts.link}" data-scene="${esc(s.id)}"`:"";
     return `<a class="seg"${href} style="left:${a/TOTAL*100}%;width:${(b-a)/TOTAL*100}%;background:${segColor(i)}" title="${esc(s.tcIn)}–${esc(s.tcOut)} ${esc(s.era||"")}">${esc(s.era||s.title||"")}</a>`;}).join("");
   const ticks=[0,30,60,90,120,150,180].map(t=>`<span style="left:${t/TOTAL*100}%">${fmt0(t)}</span>`).join("");
-  let marks="";
-  if(opts.notes){ marks=`<div class="marks">`+opts.notes.map(n=>`<button type="button" class="mk${n.done?" done":""}" style="left:${Math.min(100,n.t/TOTAL*100)}%" data-seek="${n.t}" aria-label="${esc(fmt(n.t))} のコメントへ" title="${esc(fmt(n.t))} ${esc(String(n.text||"").slice(0,40))}"></button>`).join("")+
-    `<span class="head" id="playhead" style="left:${Math.min(100,st.cur/TOTAL*100)}%"></span></div>`; }
-  return `<div class="tc"><div class="bar">${segs||""}${marks}</div><div class="ticks">${ticks}</div></div>`;
+  const marks=opts.timeline?`<div class="marks"><span class="head" id="playhead" style="left:${Math.min(100,st.cur/TOTAL*100)}%"></span></div>`:"";
+  return `<div class="tc"><div class="bar"${opts.timeline?' id="tl"':""}>${segs||""}${marks}</div><div class="ticks">${ticks}</div></div>`;
 }
 function head(p,stamp){
   return `<div class="titleblock"><div><div class="eyebrow">${p.no} ・ デモ動画</div><h1>${esc(p.name)}</h1></div>${stamp?`<span class="stamp">${esc(stamp)}</span>`:""}</div><div id="liveStatus" class="status"></div>`;
@@ -242,13 +232,12 @@ function loadingOr(emptyHtml){ if(!st.ready&&!st.err) return `<div class="empty"
 // ---------- V-00 概要 ----------
 function pageTop(){
   const done=st.scenes.filter(s=>s.status==="確定").length;
-  const open=st.notes.filter(n=>!n.done).length;
   return `<p>提出物の3分デモ動画を作るための部屋です。筋書きは「設計は一周して、手に還る」。手書きから始まった設計が、デジタイザ・マウス・タブレットを経て、Apple Pencil で再び手に戻るまでを6場面で見せます。</p>
   ${tcStrip({link:"storyboard"})}
   <div class="grid2" style="margin-top:16px">
     <a class="panel" href="#storyboard" style="text-decoration:none;color:inherit"><div class="eyebrow">V-01</div><b>絵コンテ</b><div class="note">場面ごとの映像・尺・素材。コマ画像を貼れます。</div><div class="row" style="margin-top:6px"><span class="chip">${st.scenes.length} 場面</span><span class="chip ok">確定 ${done}</span></div></a>
     <a class="panel" href="#scenario" style="text-decoration:none;color:inherit"><div class="eyebrow">V-02</div><b>シナリオ</b><div class="note">ナレーション原稿・英語字幕・画面の文字。読み上げ秒数を尺と比べます。</div></a>
-    <a class="panel" href="#viewer" style="text-decoration:none;color:inherit"><div class="eyebrow">V-03</div><b>ビューワーとコメント</b><div class="note">編集中の動画を見ながら、再生位置にコメントを付けます。</div><div class="row" style="margin-top:6px"><span class="chip">版 ${st.cuts.length}</span><span class="chip ${open?"warn":"ok"}">未対応 ${open}</span></div></a>
+    <a class="panel" href="#viewer" style="text-decoration:none;color:inherit"><div class="eyebrow">V-03</div><b>ビューワーとコメント</b><div class="note">編集中の動画を見ながら、再生位置にコメントを付けます。</div><div class="row" style="margin-top:6px"><span class="chip">版 ${st.cuts.length}</span></div></a>
   </div>
   <h2>決まっていること</h2>
   <ul>
@@ -322,32 +311,34 @@ function pageScenario(){
 
 // ---------- V-03 ビューワー ----------
 function curCut(){ return st.cuts.find(c=>c.id===st.cutId)||null; }
+function curKey(){ if(st.localUrl) return "local"; const c=curCut(); return c?c.id:""; }
+function curLabel(){ if(st.localUrl) return "この端末の動画"; const c=curCut(); return c?(c.label||"版"):""; }
+// コメントの位置（アンカー）＝「版 @ 秒」。例 cut:abc123@83.4
+const anchorOf=(key,t)=>`cut:${key}@${(Math.round(t*10)/10).toFixed(1)}`;
+function parseAnchor(a){ const m=String(a||"").match(/^cut:([A-Za-z0-9_-]+)@(\d+(?:\.\d)?)$/); return m?{key:m[1],t:+m[2]}:null; }
 function pageViewer(){
   const cut=curCut();
   const src=st.localUrl||(cut&&cut.asset?"/_blob/"+cut.asset:"");
-  const notes=st.notes.filter(n=>st.localUrl?n.cutId==="local":(cut?n.cutId===cut.id:false));
   const sc=sceneAt(st.cur);
   const screen=src?`<video id="vid" src="${esc(src)}" controls playsinline preload="metadata"></video>`:
     `<div class="ph">動画がまだありません。<br>右の「版を追加」で書き出した動画を上げるか、「この端末の動画で見る」を使ってください。</div>`;
   const label=st.localUrl?`この端末の動画：${esc(st.localName)}`:(cut?`${esc(cut.label||"")}`:"");
-  let h=`<p class="note">動画を止めたところにコメントを付けます。コメントの時刻を押すと、その位置へ飛びます。</p>
+  const mine=st.threads.map(x=>({x,p:parseAnchor(x.anchor)})).filter(o=>o.p&&o.p.key===curKey());
+  const canC=!!st.cm&&st.caState!=="off";
+  let h=`<p class="note">動画を止めて「この位置にコメント」を押すと、その時刻にコメントが付きます。コメントの印はタイムライン上に出ます。印を開くとその時刻へ飛びます。</p>
   <div class="viewer"><div style="min-width:0">
     <div class="screen">${screen}</div>
     <div class="now"><span class="t" id="nowT">${fmt(st.cur)}</span><span class="chip" id="nowScene">${esc(sc?sc.era+"・"+(sc.title||""):"場面外")}</span><span class="note">${label}</span></div>
-    ${tcStrip({notes})}
-    <form id="noteForm" class="panel" style="margin-top:12px;display:grid;gap:8px" autocomplete="off">
-      <label class="f" for="noteText">コメント（再生位置 <span class="mono" id="noteAt">${fmt(st.cur)}</span> に付きます）</label>
-      <textarea id="noteText" name="text" maxlength="1000" placeholder="例：ここのナレーションが映像より先に終わる。0.5秒詰める" ${(!src||!canWrite())?"disabled":""}></textarea>
-      <div class="row"><button type="submit" ${(!src||!canWrite())?"disabled":""}>コメントを付ける</button><span class="note">${!src?"先に動画を開いてください。":""}</span></div>
-    </form>
+    ${tcStrip({timeline:true})}
+    <div class="row" style="margin-top:12px">
+      <button type="button" id="commentHere"${(!src||!canC)?" disabled":""}>この位置にコメント</button>
+      <span class="note" id="cmNote">${!src?"先に動画を開いてください。":!st.cm?"この表示ではコメントを書けません（サインインと閲覧以上の権限が必要です）。":st.caState==="off"?"右上のコメントボタンから書き込めます。時刻も書き添えてください。":st.cmode?"コメントモード中：タイムラインを押すと、その時刻にコメントできます。":`この版のコメント ${mine.length}件${mine.length?`（未解決 ${mine.filter(o=>!o.x.resolved).length}）`:""}`}</span>
+    </div>
   </div>
   <div style="min-width:0;display:grid;gap:14px">
-    <div><h2 style="margin-top:0">コメント <span class="note">${notes.length}件・未対応 ${notes.filter(n=>!n.done).length}</span></h2>
-      ${notes.length?`<div class="notes" id="noteList"></div>`:`<div class="empty">${src?"まだコメントはありません。動画を止めて、左下の欄から書き込めます。":"動画を開くと、その版へのコメントがここに並びます。"}</div>`}
-    </div>
     <div><h2 style="margin-top:0">版</h2>
-      ${st.cuts.length?`<div class="cutlist">${st.cuts.slice().reverse().map(c=>{const nn=st.notes.filter(n=>n.cutId===c.id&&!n.done).length;
-        return `<div class="cut" aria-current="${!st.localUrl&&c.id===st.cutId}"><div><b>${esc(c.label||"")}</b><div class="note">${c.createdAt?esc(new Date(c.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})):""}${c.memo?" ・ "+esc(c.memo):""}</div></div><div class="row"><span class="chip ${nn?"warn":""}">未対応 ${nn}</span><button type="button" class="ghost small" data-cut="${esc(c.id)}">開く</button></div></div>`;}).join("")}</div>`
+      ${st.cuts.length?`<div class="cutlist">${st.cuts.slice().reverse().map(c=>
+        `<div class="cut" aria-current="${!st.localUrl&&c.id===st.cutId}"><div><b>${esc(c.label||"")}</b><div class="note">${c.createdAt?esc(new Date(c.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})):""}${c.memo?" ・ "+esc(c.memo):""}</div></div><button type="button" class="ghost small" data-cut="${esc(c.id)}">開く</button></div>`).join("")}</div>`
         :loadingOr(`<div class="empty">まだ版がありません。</div>`)}
       ${st.assets?`<form id="cutForm" class="panel" style="margin-top:10px;display:grid;gap:8px" autocomplete="off">
         <b style="font-size:14px">版を追加</b>
@@ -358,40 +349,67 @@ function pageViewer(){
         <button type="submit">上げる</button></form>`:`<div class="note" style="margin-top:8px">動画を上げられるのは編集権限のある人だけです。</div>`}
       <div class="panel" style="margin-top:10px;display:grid;gap:6px">
         <b style="font-size:14px">この端末の動画で見る</b>
-        <div class="note">20MB を超える版は、手元のファイルをこの画面で開いて見られます。動画は送信されません。コメントは「この端末の動画」の版として共有されます。</div>
+        <div class="note">20MB を超える版は、手元のファイルをこの画面で開いて見られます。動画は送信されません。コメントは「この端末の動画」の印としてまとめて残ります。</div>
         <input id="localFile" type="file" accept="video/*" aria-label="この端末の動画を選ぶ">
       </div>
     </div>
   </div></div>`;
   return h;
 }
-async function fillNotes(){
-  const box=$("#noteList"); if(!box) return;
-  const cut=curCut();
-  const notes=st.notes.filter(n=>st.localUrl?n.cutId==="local":(cut?n.cutId===cut.id:false));
-  let ps={}; if(st.user){ try{ ps=await st.user.profiles([...new Set(notes.map(n=>n.by).filter(Boolean))]); }catch(_){} }
-  if(!$("#noteList")) return;
-  box.innerHTML=notes.map(n=>{const sc=sceneAt(n.t); const who=(n.by&&ps[n.by]&&ps[n.by].name)||"だれか";
-    return `<div class="nt${n.done?" done":""}" data-id="${esc(n.id)}"><div class="top"><button type="button" class="tcbtn" data-seek="${n.t}">${fmt(n.t)}</button><span>${esc(sc?sc.era:"場面外")}</span><span>・</span><span class="who"></span>${n.done?`<span class="chip ok">対応済み</span>`:""}</div>
-      <div class="txt"></div>
-      <div class="ops"><button type="button" class="ghost small" data-act="toggle"${dis()}>${n.done?"未対応に戻す":"対応済みにする"}</button><button type="button" class="danger small" data-act="delnote"${dis()}>削除</button></div></div>`;}).join("");
-  notes.forEach(n=>{const el=box.querySelector(`.nt[data-id="${CSS.escape(n.id)}"]`); if(!el) return;
-    el.querySelector(".txt").textContent=n.text||""; el.querySelector(".who").textContent=(n.by&&ps[n.by]&&ps[n.by].name)||"だれか";});
+
+// ---------- コメント（claude.ai のコメント機能。印の位置だけこのページが決める） ----------
+function tlPoint(t){
+  const bar=$("#tl"); if(!bar) return null; const r=bar.getBoundingClientRect(); if(!r.width) return null;
+  return {x:r.left+window.scrollX+Math.min(1,Math.max(0,t/TOTAL))*r.width, y:r.top+window.scrollY+r.height/2};
+}
+function reportPlaced(){
+  if(!st.ca) return; const map={}; const key=curKey();
+  st.threads.forEach(x=>{ const p=parseAnchor(x.anchor); if(p&&p.key===key){ const pt=tlPoint(p.t); if(pt) map[x.id]=pt; } });
+  try{ st.ca.placed(map); }catch(_){}
+}
+async function syncAnchoring(){
+  const want=curPage==="viewer"&&!!st.cm;
+  if(want&&!st.ca&&st.caState!=="off"&&st.caState!=="pending"){
+    st.caState="pending";
+    try{
+      st.ca=await st.cm.customAnchors({
+        mode:on=>{ st.cmode=on; if(!on) st.threads=[]; refreshNote(); },
+        threads:list=>{ st.threads=list||[]; reportPlaced(); refreshNote(); },
+        reveal:id=>{ const x=st.threads.find(y=>y.id===id); const p=x&&parseAnchor(x.anchor); if(!p) return;
+          if(p.key!==curKey()){ if(p.key==="local"){ flash("このコメントは「この端末の動画」に付いています。同じ動画を開いてください。"); return; } st.cutId=p.key; if(st.localUrl){URL.revokeObjectURL(st.localUrl); st.localUrl="";} render.force=true; render(); }
+          seek(p.t); const bar=$("#tl"); if(bar) bar.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); }
+      });
+      st.caState="on"; if(curPage!=="viewer"){ st.ca.release(); st.ca=null; st.caState=""; } else reportPlaced();
+    }catch(e){ st.ca=null; st.caState="off"; }
+    refreshNote();
+  } else if(!want&&st.ca){ try{ st.ca.release(); }catch(_){} st.ca=null; st.caState=""; st.threads=[]; st.cmode=false; }
+}
+function refreshNote(){ if(curPage!=="viewer"||!$("#view .viewer")) return; updateViewerSide(); }
+async function composeAt(t){
+  const key=curKey(); if(!key) return;
+  const sc=sceneAt(t); const lbl=`${curLabel()} ${fmt(t)}${sc?" "+sc.era:""}`;
+  const v=$("#vid"); if(v) v.pause();
+  if(st.ca){
+    const pt=tlPoint(t)||$("#tl");
+    try{ await st.ca.compose(anchorOf(key,t),pt,{label:lbl}); }catch(e){ if(e&&e.code==="rate_limited") flash("少し待ってからもう一度押してください。"); }
+  } else if(st.cm){
+    try{ await st.cm.openComposer({element:$("#tl")||$("#view")}); flash(`時刻 ${fmt(t)} を書き添えてください。`); }catch(_){ flash("この表示ではコメントを書けません。"); }
+  }
 }
 function bindVideo(){
   const v=$("#vid"); if(!v) return;
   if(st.cur>0){ v.addEventListener("loadedmetadata",()=>{ try{ v.currentTime=Math.min(st.cur,v.duration||st.cur); }catch(_){} },{once:true}); }
   v.addEventListener("timeupdate",()=>{ st.cur=v.currentTime;
-    const t=fmt(st.cur); const a=$("#nowT"); if(a) a.textContent=t; const b=$("#noteAt"); if(b) b.textContent=t;
+    const t=fmt(st.cur); const a=$("#nowT"); if(a) a.textContent=t;
     const sc=sceneAt(st.cur); const c=$("#nowScene"); if(c) c.textContent=sc?sc.era+"・"+(sc.title||""):"場面外";
     const ph=$("#playhead"); if(ph) ph.style.left=Math.min(100,st.cur/TOTAL*100)+"%"; });
 }
-function seek(t){ const v=$("#vid"); st.cur=+t; if(v){ try{ v.currentTime=+t; v.pause(); }catch(_){} } const a=$("#nowT"); if(a) a.textContent=fmt(st.cur); const b=$("#noteAt"); if(b) b.textContent=fmt(st.cur); const ph=$("#playhead"); if(ph) ph.style.left=Math.min(100,st.cur/TOTAL*100)+"%"; }
+function seek(t){ const v=$("#vid"); st.cur=+t; if(v){ try{ v.currentTime=+t; v.pause(); }catch(_){} } const a=$("#nowT"); if(a) a.textContent=fmt(st.cur); const ph=$("#playhead"); if(ph) ph.style.left=Math.min(100,st.cur/TOTAL*100)+"%"; }
 
 // ---------- 描画 ----------
 let curPage="top";
 function renderNav(){
-  const c={scenes:st.scenes.length, open:st.notes.filter(n=>!n.done).length};
+  const c={scenes:st.scenes.length};
   $("#navList").innerHTML=PAGES.map(p=>`<a class="nav" href="#${p.id}"${p.id===curPage?' aria-current="page"':""}><span class="no">${p.no}</span>${esc(p.name)}${p.cnt&&st.ready?`<span class="cnt">${c[p.cnt]}</span>`:""}</a>`).join("");
 }
 function render(){
@@ -409,7 +427,8 @@ function render(){
   if(p.id==="top") body=pageTop(); else if(p.id==="storyboard") body=pageStoryboard(); else if(p.id==="scenario") body=pageScenario(); else body=pageViewer();
   $("#view").innerHTML=head(p, p.id==="top"?"準備中":"")+body;
   setErr(st.err);
-  if(p.id==="viewer"){ bindVideo(); fillNotes(); }
+  if(p.id==="viewer"){ bindVideo(); }
+  syncAnchoring(); if(p.id==="viewer") requestAnimationFrame(reportPlaced);
 }
 let deferred=false;
 function updateViewerSide(){
@@ -417,7 +436,8 @@ function updateViewerSide(){
   const right=$("#view .viewer > div:last-child"), nr=tmp.querySelector(".viewer > div:last-child");
   if(right&&nr) right.replaceWith(nr);
   const tc=$("#view .viewer .tc"), ntc=tmp.querySelector(".viewer .tc"); if(tc&&ntc) tc.replaceWith(ntc);
-  setErr(st.err); fillNotes();
+  ["#cmNote","#commentHere"].forEach(sel=>{ const a=$(sel), b=tmp.querySelector(sel); if(a&&b) a.replaceWith(b); });
+  setErr(st.err); reportPlaced();
 }
 document.addEventListener("focusout",()=>{ setTimeout(()=>{ if(deferred){ const ae=document.activeElement; if(!(ae&&$("#view").contains(ae)&&(ae.tagName==="TEXTAREA"||ae.tagName==="INPUT"))){ deferred=false; render(); } } },0); });
 
@@ -426,18 +446,22 @@ window.addEventListener("hashchange",route);
 $("#menuBtn").addEventListener("click",()=>{const o=$("#side").classList.toggle("open"); $("#menuBtn").setAttribute("aria-expanded",String(o));});
 
 // ---------- 操作 ----------
+window.addEventListener("resize",()=>{ if(curPage==="viewer") reportPlaced(); });
+document.addEventListener("click",e=>{ // コメントモード中はタイムラインを押した時刻にコメント。通常時はその時刻へ移動
+  const bar=e.target.closest&&e.target.closest("#tl"); if(!bar) return;
+  e.preventDefault(); e.stopPropagation();
+  const r=bar.getBoundingClientRect(); const t=Math.max(0,Math.min(TOTAL,(e.clientX-r.left)/r.width*TOTAL));
+  if(st.cmode&&st.ca&&curKey()) composeAt(t); else seek(t);
+},true);
 document.addEventListener("click",async e=>{
   const t=e.target.closest("button,a"); if(!t) return;
   if(t.dataset.seek!=null){ seek(t.dataset.seek); return; }
   if(t.dataset.scene&&t.tagName==="A"){ e.preventDefault(); const id=t.dataset.scene; location.hash="storyboard"; setTimeout(()=>{const el=document.getElementById("sc-"+id); if(el) el.scrollIntoView({block:"start"});},0); return; }
+  if(t.id==="commentHere"){ composeAt(st.cur); return; }
   if(t.dataset.cut){ st.cutId=t.dataset.cut; if(st.localUrl){ URL.revokeObjectURL(st.localUrl); st.localUrl=""; } st.cur=0; render.force=true; render(); return; }
   const act=t.dataset.act; if(!act) return;
   if(act==="edit"){ st.editing[t.dataset.key]=true; render.force=true; deferred=false; document.activeElement&&document.activeElement.blur(); render(); return; }
   if(act==="cancel"){ delete st.editing[t.dataset.key]; deferred=false; document.activeElement&&document.activeElement.blur(); render.force=true; render(); return; }
-  const nt=t.closest(".nt"); if(!nt) return; const id=nt.dataset.id; const n=st.notes.find(x=>x.id===id); if(!n) return;
-  if(act==="toggle") await write(()=>st.db.collection("notes").doc(id).update({done:!n.done}));
-  if(act==="delnote"){ if(t.dataset.confirm!=="1"){ t.dataset.confirm="1"; t.textContent="本当に削除"; setTimeout(()=>{ if(t.isConnected){t.dataset.confirm=""; t.textContent="削除";} },3000); return; }
-    await write(()=>st.db.collection("notes").doc(id).delete(),"削除しました"); }
 });
 document.addEventListener("submit",async e=>{
   const f=e.target; e.preventDefault();
@@ -449,13 +473,6 @@ document.addEventListener("submit",async e=>{
     patch.updatedAt=new Date().toISOString(); if(st.me) patch.updatedBy=st.me;
     const ok=await write(()=>st.db.collection("scenes").doc(id).update(patch),"保存しました");
     if(ok){ delete st.editing[(f.dataset.form==="board"?"b:":"s:")+id]; deferred=false; document.activeElement&&document.activeElement.blur(); render.force=true; render(); flash("保存しました"); }
-    return;
-  }
-  if(f.id==="noteForm"){
-    const ta=$("#noteText"); const text=ta.value.trim(); if(!text) return;
-    const cut=curCut(); const cutId=st.localUrl?"local":(cut?cut.id:null); if(!cutId) return;
-    const ok=await write(()=>st.db.collection("notes").add({cutId,t:Math.round(st.cur*10)/10,text,done:false,by:st.me||"",createdAt:new Date().toISOString()}));
-    if(ok){ ta.value=""; ta.blur(); deferred=false; render(); flash("コメントを付けました"); }
     return;
   }
   if(f.id==="cutForm"){
