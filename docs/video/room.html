@@ -93,6 +93,16 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .kv{display:grid;grid-template-columns:5.2em minmax(0,1fr);gap:3px 10px;font-size:13px}
 .kv dt{color:var(--ink-2)} .kv dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
 .edit{display:grid;gap:8px;border-top:1px dashed var(--rule);padding-top:10px}
+.sb{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
+.sbDetail .board{grid-template-rows:auto 1fr}
+.sbList{display:grid;gap:6px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto}
+.sbRow{display:grid;grid-template-columns:10px auto minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;background:var(--sheet);color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:8px 10px}
+.sbRow[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.sbRow .sbTc{font-size:12px;color:var(--ink-2)}
+.sbRow .sbTitle{display:grid;min-width:0}
+.sbRow .sbTitle b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbRow .sbTitle .note{font-size:11.5px}
+@media (max-width:900px){.sb{grid-template-columns:minmax(0,1fr)}.sbList{order:-1;position:static;max-height:none}}
 .ed{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
 .edStage{background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;max-width:100%}
 .edStage canvas{width:100%;height:100%;display:block}
@@ -313,9 +323,14 @@ function tonePanel(){
     ${refs.length?`<div class="note" style="display:grid;gap:4px">${refs.map(r=>`<div><b>${/^https:\/\//.test(r.url||"")?`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a>`:esc(r.name)}</b>：${esc(r.note||"")}</div>`).join("")}</div>`:""}</section>`;
 }
 function pageStoryboard(){
-  let h=`<p class="note">場面ごとの映像の中身と尺。帯の色は場面の色です。「書き込む」で各欄を直せます。</p>${tonePanel()}${tcStrip()}<div style="height:14px"></div>`;
+  let h=`<p class="note">場面ごとの映像の中身と尺。右の一覧か上の帯で場面を選ぶと、左に詳細が出ます。「書き込む」で各欄を直せます。</p>${tonePanel()}${tcStrip({link:"storyboard"})}<div style="height:14px"></div>`;
   if(!st.scenes.length) return h+loadingOr(`<div class="empty">場面がまだありません。Claude が筋書きの6場面を入れると、ここにコマが並びます。</div>`);
-  return h+`<div class="boards">${st.scenes.map(boardCard).join("")}</div>`;
+  if(!st.scenes.some(x=>x.id===st.sbSel)) st.sbSel=st.scenes[0].id;
+  const i=st.scenes.findIndex(x=>x.id===st.sbSel);
+  const rows=st.scenes.map((x,k)=>{ const a=toSec(x.tcIn),b=toSec(x.tcOut); const stc=x.status==="確定"?"ok":x.status==="案"?"warn":"";
+    return `<button type="button" class="sbRow" data-sb="${esc(x.id)}" aria-current="${x.id===st.sbSel}"><span class="sw" style="background:${segColor(k)}"></span>
+      <span class="mono sbTc">${esc(x.tcIn||"")}–${esc(x.tcOut||"")}</span><span class="sbTitle"><span class="note">場面 ${k+1} ・ ${esc(x.era||"")}${a!=null&&b!=null?` ・ ${b-a}秒`:""}</span><b>${esc(x.title||"")}</b></span><span class="chip ${stc}">${esc(x.status||"未着手")}</span></button>`; }).join("");
+  return h+`<div class="sb"><div class="sbDetail">${boardCard(st.scenes[i],i)}</div><nav class="sbList" aria-label="場面の一覧">${rows}</nav></div>`;
 }
 
 // ---------- V-04 素材集め ----------
@@ -884,7 +899,8 @@ document.addEventListener("click",e=>{ // コメントモード中はタイム�
 document.addEventListener("click",async e=>{
   const t=e.target.closest("button,a"); if(!t) return;
   if(t.dataset.seek!=null){ seek(t.dataset.seek); return; }
-  if(t.dataset.scene&&t.tagName==="A"){ e.preventDefault(); const id=t.dataset.scene; location.hash="storyboard"; setTimeout(()=>{const el=document.getElementById("sc-"+id); if(el) el.scrollIntoView({block:"start"});},0); return; }
+  if(t.dataset.scene&&t.tagName==="A"){ e.preventDefault(); st.sbSel=t.dataset.scene; if(curPage!=="storyboard") location.hash="storyboard"; else { render.force=true; render(); } return; }
+  if(t.dataset.sb){ st.sbSel=t.dataset.sb; render.force=true; render(); if(matchMedia("(max-width:900px)").matches){ const el=$(".sbDetail"); if(el) el.scrollIntoView({block:"start"}); } return; }
   if(t.dataset.mf){ const k=t.dataset.mf, v=t.dataset.v; st.mf[k]=st.mf[k]===v?"すべて":v; render.force=true; render(); return; }
   if(t.dataset.mfclear){ st.mf={group:"すべて",apply:"すべて",check:"すべて"}; render.force=true; render(); return; }
   if(t.id==="commentHere"){ composeAt(st.cur); return; }
