@@ -18,7 +18,10 @@
 2. `templates/project-hub.html` を **新しい Artifact として公開** する
    - capabilities は `{"db": {}, "user": {}}`
    - 公開した瞬間は空。中身はすべて共有データから描かれる
-3. 動画制作ページのテンプレート `templates/video-studio.html` も新しい Artifact として公開する（同梱されていれば）
+3. 動画制作ページのテンプレート `templates/video-studio.html` も新しい Artifact として公開する
+   - capabilities は `{"assets":{}, "comments":{"customAnchors":true}, "db":{}, "downloads":{}, "user":{"scopes":["profile"]}}`
+   - `meta/project` に `{name, subtitle, hubUrl:"<ハブの URL>", totalSec:180, summary, rules:[…]}` を入れる
+   - 空の見本：テンプレートを公開した状態の見本は https://claude.ai/artifact/5WRNqEp1Yf6KLhgYabyaK8 （ハブ）と https://claude.ai/artifact/Vy1ZQmBumt1ghMBaRnrxyT （動画）。見本そのものは使わず、毎回ファイルから新しく公開する
 4. ハブの共有データに初期値を入れる（ArtifactData の batch で 1 回）
    - `meta/project`：`{name, subtitle, modules:["M0",…], links:[{name:"動画制作ページ", url:"<動画の URL>"}]}`
    - `sessions/<id>`：司令塔セッション自身を 1 件
@@ -86,6 +89,17 @@ Claude は ArtifactData で直接書き込む。画面からも代表がタス�
 
 ### `sessions/<id>`
 `{name, module, status:"計画"|"実行中"|"完了", purpose, url, createdAt}`
+
+### 動画制作ページの共有データ（参考）
+| コレクション | 中身 |
+|---|---|
+| `meta/project` | name, subtitle, hubUrl, totalSec（既定 180）, summary, rules[] |
+| `meta/style` | title, points[], refs[{name,url,note}]（絵コンテ上段のトーン枠） |
+| `scenes/<id>` | order, tcIn, tcOut（"0:00"）, era, title, status（未着手／案／確定）, picture, onscreen, materials, shot, ref, frame（asset id）, line, narrationJa, subtitleEn ほか |
+| `materials/<id>` | order, group, title, url, source, rights, scene, apply（不要／必要／要確認／—）, check（確認済み／確認中／未着手）, status（候補／使う／使わない）, img, note, basis, credit |
+| `pkg/<素材 id>` | mid, title, img, state（in／archived）, addedAt, archivedAt, by（パッケージ） |
+| `cuts/<id>` | createdAt, label, asset（ビューワーの版） |
+| `edits/<id>` | title, aspect, clips[], audio[]（track＝narr/bgm/sfx）, log[], updatedAt（編集データ） |
 
 ## 4. セッションの回し方
 
