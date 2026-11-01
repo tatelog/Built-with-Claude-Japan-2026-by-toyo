@@ -121,6 +121,30 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .edThumb span{font-size:10.5px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .edGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
 @media (max-width:900px){.ed{grid-template-columns:minmax(0,1fr)}}
+.tlWrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet);margin-top:8px;-webkit-overflow-scrolling:touch}
+.tlInner{position:relative;padding-bottom:6px}
+.tlRow{display:flex;border-bottom:1px solid var(--rule)}
+.tlRow:last-of-type{border-bottom:0}
+.tlLbl{position:sticky;left:0;z-index:4;flex:0 0 96px;width:96px;background:var(--muted);border-right:1px solid var(--rule);padding:6px 8px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:4px}
+.tlLane{position:relative;height:56px;flex:none}
+.tlRow[data-track="video"] .tlLane{height:76px}
+.tlRow[data-track="text"] .tlLane{height:34px}
+.tlRulerRow .tlLane{height:26px;cursor:pointer;touch-action:none}
+.tlRuler span{position:absolute;top:5px;font-family:var(--f-mono);font-size:10.5px;color:var(--ink-2);padding-left:3px;border-left:1px solid var(--rule)}
+.tlBar{position:absolute;top:6px;bottom:6px;border-radius:5px;overflow:hidden;border:1px solid rgba(0,0,0,.25);background:#5b6b78;color:#fff;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.tlBar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85;pointer-events:none}
+.tlBar.txt{background:#111}
+.tlBar.t{background:#2b2f36;cursor:pointer}
+.tlBar.a.narr{background:#2f6d5a}.tlBar.a.bgm{background:#5a4f8a}.tlBar.a.sfx{background:#8a5a2f}
+.tlBar.sel{outline:3px solid var(--accent);outline-offset:-1px;z-index:3}
+.tlT{position:absolute;left:12px;right:12px;bottom:4px;font-size:11px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #000;pointer-events:none}
+.tlVol{position:absolute;right:12px;bottom:0;width:3px;background:rgba(255,255,255,.6);pointer-events:none}
+.tlH{position:absolute;top:0;bottom:0;width:12px;z-index:2;cursor:ew-resize;background:rgba(255,255,255,.18)}
+.tlH.l{left:0}.tlH.r{right:0}
+.tlBar.t .tlH{display:none}
+.tlPH{position:absolute;top:0;bottom:0;width:2px;background:var(--check);pointer-events:none;z-index:6}
+.tlAdd{cursor:pointer;color:var(--accent);font-size:16px;line-height:1;padding:2px 6px;border:1px solid var(--accent);border-radius:4px}
+.tlEmpty{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--ink-2);white-space:nowrap}
 .edLogList{margin:0;padding-left:1.4em;font-size:13px;display:grid;gap:2px;max-height:220px;overflow-y:auto}
 #agentBox summary{cursor:pointer}
 .chipbtn{cursor:pointer;font:inherit;font-size:12px;padding:2px 10px}
@@ -502,7 +526,7 @@ function seek(t){ const v=$("#vid"); st.cur=+t; if(v){ try{ v.currentTime=+t; v.
 // ---------- V-05 編集（ムービーメーカー） ----------
 // 編集データは共有データ edits/main に1つだけ保存する。Claude は同じデータから高画質版を作れる。
 const ED={doc:null,remoteAt:"",dirty:false,saveT:0,sel:-1,playing:false,t:0,raf:0,t0:0,mounted:false,
-  imgs:{},monos:{},vids:{},auds:{},actx:null,rec:null,recBlob:null,recUrl:""};
+  imgs:{},monos:{},vids:{},auds:{},actx:null,rec:null,recBlob:null,recUrl:"",selA:-1,drag:null};
 const CW=1280,CH=720;
 const newId=()=>Math.random().toString(36).slice(2,9);
 function edDefault(){ return {title:"冒頭",aspect:"scope",clips:[],audio:[]}; }
@@ -578,7 +602,7 @@ function edFrame(ctx,t){
 function edDraw(t){ const cv=$("#edCanvas"); if(!cv) return; edFrame(cv.getContext("2d"),t); edPlayhead(t); }
 function edPlayhead(t){ const T=edTotal(); const a=$("#edTime"); if(a) a.textContent=fmt(t)+" / "+fmt(T);
   const r=$("#edScrub"); if(r&&document.activeElement!==r){ r.max=String(T); r.value=String(t); }
-  const ph=$("#edPH"); if(ph) ph.style.left=(t*PX)+"px"; }
+  const ph=$("#edPH"); if(ph) ph.style.left=(LBL+t*PX)+"px"; }
 // --- 再生
 function edSyncMedia(t,play){
   const d=edDoc(), st0=edStarts();
@@ -618,7 +642,7 @@ function edOut(){ const box=$("#edOut"); if(!box) return; if(!ED.recBlob){ box.i
     <div class="row">${st.assets?`<button type="button" data-ed="tocut"${ED.recBlob.size>20*1048576?" disabled":""}>ビューワーに版として追加</button>`:""}<button type="button" class="ghost" data-ed="dl">この端末に保存</button>
     ${ED.recBlob.size>20*1048576?`<span class="note">20MB を超えたため、ビューワーには追加できません。</span>`:""}</div></div>`; }
 // --- 画面
-const PX=40; // タイムラインの1秒あたりの幅
+let PX=40; // タイムラインの1秒あたりの幅
 function pageEditor(){
   const d=edDoc();
   return `<p class="note">素材集めの写真やビューワーの動画を並べて、1本の動画にします。編集の中身は自動で保存され、同じ内容から Claude が高画質版も作れます。</p>
@@ -636,12 +660,6 @@ function pageEditor(){
         <button type="button" data-ed="export"${canWrite()?"":" "}>動画に書き出す</button><span class="note" id="edSaved"></span>
       </div>
       <div id="edOut" style="margin-top:10px"></div>
-      <h2>タイムライン <span class="note" id="edCount"></span></h2>
-      <div class="edTL" id="edTL"></div>
-      <h2>音</h2>
-      <div id="edAudio"></div>
-      <h2>作業の記録</h2>
-      <div id="edLog"></div>
     </div>
     <div style="min-width:0;display:grid;gap:14px;align-content:start">
       <div class="panel" id="edInsp"></div>
@@ -652,29 +670,108 @@ function pageEditor(){
         <div class="note" style="margin:10px 0 6px">動画（ビューワーの版）</div>
         <div id="edLibVid" style="display:grid;gap:6px"></div>
       </div>
-      ${agentPanel()}
     </div>
-  </div>`;
+  </div>
+  <div class="row" style="margin-top:18px;justify-content:space-between"><h2 style="margin:0">タイムライン <span class="note" id="edCount"></span></h2>
+    <div class="row"><button type="button" class="ghost small" data-ed="zout" aria-label="縮小">－</button><span class="note mono" id="edZoomV">${Math.round(PX)}px/秒</span><button type="button" class="ghost small" data-ed="zin" aria-label="拡大">＋</button></div></div>
+  <div class="note">帯を横に動かすと位置（映像は並べ替え）、右端をつまむと長さ、左端をつまむと頭を切れます。帯を押すと上に詳細が出ます。時間の目盛りを押すとその位置へ移動。</div>
+  <div class="tlWrap" id="edTL"></div>
+  <div class="grid2" style="margin-top:14px"><div><h2 style="margin-top:0">作業の記録</h2><div id="edLog"></div></div><div>${agentPanel()}</div></div>`;
 }
 function edLibrary(){
   const li=$("#edLibImg"); if(li){ const pics=st.materials.filter(m=>m.img);
     li.innerHTML=pics.length?pics.map(m=>`<button type="button" class="edThumb" data-addimg="${esc(m.img)}" data-title="${esc(m.title)}" title="${esc(m.title)}"><img src="/_blob/${esc(m.img)}" alt="" loading="lazy"><span>${esc(m.title)}</span></button>`).join(""):`<div class="note">画像のある素材がまだありません。</div>`; }
   const lv=$("#edLibVid"); if(lv){ lv.innerHTML=st.cuts.length?st.cuts.slice().reverse().map(c=>`<button type="button" class="ghost small" style="text-align:left" data-addvid="${esc(c.asset||"")}" data-title="${esc(c.label||"")}">＋ ${esc(c.label||"")}</button>`).join(""):`<div class="note">版がまだありません。</div>`; }
 }
+// --- 多段タイムライン（映像／文字・字幕／ナレーション／BGM／効果音）。指・Apple Pencil・マウスで操作
+const LBL=96;
+const TRACKS=[["video","映像"],["text","文字・字幕"],["narr","ナレーション"],["bgm","BGM"],["sfx","効果音"]];
+const AUD_TRACKS=["narr","bgm","sfx"];
+function audTrack(a){ if(a.track) return a.track; const n=String(a.name||""); return /ナレーション|narr|声/i.test(n)?"narr":/BGM|音楽|曲/i.test(n)?"bgm":"sfx"; }
+function audLen(a){ if(+a.len>0) return +a.len; const el=ED.auds[a.id]; if(el&&el.duration&&isFinite(el.duration)) return Math.max(0.1,el.duration-(+a.in||0));
+  const el2=edAud(a); if(!el2._lm){ el2._lm=1; el2.addEventListener("loadedmetadata",()=>{ if(curPage==="editor"&&ED.mounted&&!ED.drag) edTimeline(); }); } return Math.max(1,edTotal()-(+a.start||0)); }
 function edTimeline(){
-  const d=edDoc(), box=$("#edTL"); if(!box) return; const st0=edStarts(), T=edTotal();
-  const cnt=$("#edCount"); if(cnt) cnt.textContent=`${d.clips.length}カット・${fmt0(T)}`;
-  if(!d.clips.length){ box.innerHTML=`<div class="empty">右の「素材を足す」から写真や文字カードを足すと、ここに並びます。</div>`; return; }
-  let ticks=""; for(let s=0;s<=T;s+=5) ticks+=`<span style="left:${s*PX}px">${fmt0(s)}</span>`;
-  box.innerHTML=`<div class="edTrack" style="width:${Math.max(T*PX+20,300)}px"><div class="edTicks">${ticks}</div>`+
-    d.clips.map((c,k)=>`<button type="button" class="edClip${k===ED.sel?" sel":""}" data-clip="${k}" style="left:${st0[k]*PX}px;width:${Math.max(18,c.dur*PX-2)}px" title="${esc(c.title||c.textJa||"")}">
-      ${c.kind==="image"&&c.img?`<img src="/_blob/${esc(c.img)}" alt="" loading="lazy"${c.mono?' style="filter:grayscale(1)"':""}>`:""}
-      <span>${c.kind==="text"?"文字："+esc(c.textJa||""):c.kind==="video"?"動画："+esc(c.title||""):esc(c.title||"")}</span></button>`).join("")+
-    `<div class="edPH" id="edPH" style="left:${ED.t*PX}px"></div></div>`;
+  const d=edDoc(), box=$("#edTL"); if(!box) return; const st0=edStarts(), T=Math.max(edTotal(),...d.audio.map(a=>(+a.start||0)+audLen(a)),5);
+  const cnt=$("#edCount"); if(cnt) cnt.textContent=`${d.clips.length}カット・音 ${d.audio.length}・${fmt0(edTotal())}`;
+  const W=Math.ceil(T*PX)+60; const step=PX>=80?1:PX>=30?5:10; let ticks="";
+  for(let s=0;s<=T+0.01;s+=step) ticks+=`<span style="left:${s*PX}px">${fmt0(s)}</span>`;
+  const bar=(cls,attrs,left,width,inner,sel)=>`<div class="tlBar ${cls}${sel?" sel":""}" ${attrs} style="left:${left}px;width:${Math.max(6,width)}px">
+    <span class="tlH l" data-h="l"></span>${inner}<span class="tlH r" data-h="r"></span></div>`;
+  const lane={video:"",text:"",narr:"",bgm:"",sfx:""};
+  d.clips.forEach((c,k)=>{ const w=c.dur*PX-2;
+    lane.video+=bar("v"+(c.kind==="text"?" txt":""),`data-clip="${k}"`,st0[k]*PX,w,
+      `${c.kind==="image"&&c.img?`<img src="/_blob/${esc(c.img)}" alt="" loading="lazy" draggable="false"${c.mono?' style="filter:grayscale(1)"':""}>`:""}<span class="tlT">${c.kind==="text"?"文字："+esc(c.textJa||""):c.kind==="video"?"動画："+esc(c.title||""):esc(c.title||"")}</span>`,k===ED.sel&&ED.selA<0);
+    if(c.textJa||c.textEn) lane.text+=bar("t",`data-clip="${k}" data-nodrag="1"`,st0[k]*PX,w,`<span class="tlT">${esc((c.textJa||"").replace(/\n/g," "))}${c.textEn?" ／ "+esc(c.textEn):""}</span>`,k===ED.sel&&ED.selA<0); });
+  // 同じ段で重なる音は、段の中で上下に振り分ける
+  const slots={}, nSlot={narr:1,bgm:1,sfx:1};
+  AUD_TRACKS.forEach(tr=>{ const ends=[]; d.audio.map((a,k)=>({a,k})).filter(o=>audTrack(o.a)===tr).sort((x,y)=>(+x.a.start||0)-(+y.a.start||0)).forEach(o=>{
+    const s0=+o.a.start||0; let i=ends.findIndex(e=>e<=s0+0.001); if(i<0){ i=ends.length; ends.push(0); } ends[i]=s0+audLen(o.a); slots[o.k]=i; }); nSlot[tr]=Math.max(1,ends.length); });
+  d.audio.forEach((a,k)=>{ const tr=audTrack(a); const n=nSlot[tr], sl=slots[k]||0; const hh=n>1?28:44;
+    lane[tr]+=bar("a "+tr,`data-aud="${k}"`,(+a.start||0)*PX,audLen(a)*PX-2,`<span class="tlT">♪ ${esc(a.name||"音")}</span><span class="tlVol" style="height:${Math.round((a.vol==null?0.8:+a.vol)*100)}%"></span>`,k===ED.selA).replace('style="left:',`style="top:${6+sl*(hh+4)}px;bottom:auto;height:${hh}px;left:`); });
+  ED._laneH=nSlot;
+  const add=tr=>st.assets?`<label class="tlAdd" title="音のファイルを足す">＋<input type="file" data-audtrack="${tr}" accept=".m4a,audio/mp4,audio/x-m4a,video/mp4,video/webm,audio/webm" hidden></label>`:"";
+  box.innerHTML=`<div class="tlInner" style="width:${W+LBL}px">
+    <div class="tlRow tlRulerRow"><div class="tlLbl"><span class="note">時間</span></div><div class="tlLane tlRuler" data-ruler="1" style="width:${W}px">${ticks}</div></div>
+    ${TRACKS.map(([k,n])=>`<div class="tlRow" data-track="${k}"><div class="tlLbl">${n}${AUD_TRACKS.includes(k)?add(k):""}</div><div class="tlLane" style="width:${W}px${AUD_TRACKS.includes(k)&&nSlot[k]>1?`;height:${12+nSlot[k]*32}px`:""}">${lane[k]||(AUD_TRACKS.includes(k)?`<span class="tlEmpty">${st.assets?"左の＋から音を足す":"音はまだありません"}</span>`:"")}</div></div>`).join("")}
+    <div class="tlPH" id="edPH" style="left:${LBL+ED.t*PX}px"></div></div>`;
 }
+// ドラッグ（位置・長さ）とタップ（選択）
+let PXmin=8,PXmax=240;
+function tlZoom(f){ const box=$("#edTL"); const center=box?(box.scrollLeft+box.clientWidth/2-LBL)/PX:ED.t; PX=Math.max(PXmin,Math.min(PXmax,PX*f)); edTimeline(); if(box) box.scrollLeft=center*PX+LBL-box.clientWidth/2; const z=$("#edZoomV"); if(z) z.textContent=Math.round(PX)+"px/秒"; }
+document.addEventListener("pointerdown",e=>{
+  if(curPage!=="editor") return; const box=$("#edTL"); if(!box||!box.contains(e.target)) return;
+  const ruler=e.target.closest("[data-ruler]"); if(ruler){ const r=ruler.getBoundingClientRect(); ED.t=Math.max(0,(e.clientX-r.left)/PX); if(ED.playing) edStop(); edSyncMedia(ED.t,false); edDraw(ED.t); ED.drag={kind:"seek",lane:r}; ruler.setPointerCapture(e.pointerId); e.preventDefault(); return; }
+  const el=e.target.closest(".tlBar"); if(!el) return;
+  const h=e.target.dataset.h||"m"; const isA=el.dataset.aud!=null; const idx=+(isA?el.dataset.aud:el.dataset.clip);
+  const d=edDoc(); const o=isA?JSON.parse(JSON.stringify(d.audio[idx])):JSON.parse(JSON.stringify(d.clips[idx]));
+  ED.drag={kind:isA?"aud":"clip",idx,h,x0:e.clientX,o,el,moved:false,nodrag:!!el.dataset.nodrag||!canWrite()};
+  el.setPointerCapture(e.pointerId); e.preventDefault();
+});
+document.addEventListener("pointermove",e=>{
+  const g=ED.drag; if(!g) return;
+  if(g.kind==="seek"){ ED.t=Math.max(0,(e.clientX-g.lane.left)/PX); edSyncMedia(ED.t,false); edDraw(ED.t); return; }
+  const dx=e.clientX-g.x0; if(!g.moved&&Math.abs(dx)<5) return; g.moved=true; if(g.nodrag) return;
+  const ds=dx/PX, d=edDoc(), snap=v=>Math.round(v*20)/20;
+  if(g.kind==="aud"){ const a=d.audio[g.idx]; const L0=audLen(g.o);
+    if(g.h==="m"){ a.start=Math.max(0,snap((+g.o.start||0)+ds)); g.el.style.left=(a.start*PX)+"px"; }
+    else if(g.h==="r"){ a.len=Math.max(0.2,snap(L0+ds)); g.el.style.width=(a.len*PX-2)+"px"; }
+    else { const dd=Math.max(-(+g.o.in||0),Math.min(L0-0.2,ds)); a.start=snap((+g.o.start||0)+dd); a.in=snap((+g.o.in||0)+dd); a.len=snap(L0-dd); g.el.style.left=(a.start*PX)+"px"; g.el.style.width=(a.len*PX-2)+"px"; }
+  } else { const c=d.clips[g.idx]; const sp=+c.speed||1;
+    if(g.h==="r"){ c.dur=Math.max(0.1,snap(g.o.dur+ds)); g.el.style.width=(c.dur*PX-2)+"px"; }
+    else if(g.h==="l"&&c.kind==="video"){ const dd=Math.max(-(+g.o.in||0)/sp,Math.min(g.o.dur-0.1,ds)); c.in=snap((+g.o.in||0)+dd*sp); c.dur=snap(g.o.dur-dd); g.el.style.width=(c.dur*PX-2)+"px"; }
+    else if(g.h==="m"){ // 横に動かして並べ替え：中心が隣のカットを越えたら入れ替え
+      g.el.style.transform=`translateX(${dx}px)`; g.el.style.zIndex=5; }
+  }
+});
+document.addEventListener("pointerup",e=>{
+  const g=ED.drag; if(!g) return; ED.drag=null;
+  if(g.kind==="seek") return;
+  if(!g.moved){ // タップ＝選択
+    if(g.kind==="aud"){ ED.selA=g.idx; ED.sel=-1; } else { ED.selA=-1; ED.sel=g.idx; ED.t=edStarts()[g.idx]+0.01; if(ED.playing) edStop(); edDraw(ED.t); }
+    edTimeline(); edInspector(); return; }
+  if(g.nodrag) return;
+  if(g.kind==="clip"&&g.h==="m"){ const d=edDoc(); const st0=edStarts(); const c=d.clips[g.idx]; const center=st0[g.idx]+c.dur/2+(e.clientX-g.x0)/PX;
+    let to=st0.findIndex((s,k)=>center<s+d.clips[k].dur); if(to<0) to=d.clips.length-1;
+    if(to!==g.idx){ d.clips.splice(g.idx,1); d.clips.splice(to,0,c); ED.sel=to; ED.selA=-1; } }
+  edSave(); edTimeline(); edInspector(); edDraw(ED.t);
+});
+document.addEventListener("pointercancel",()=>{ if(ED.drag){ ED.drag=null; edTimeline(); } });
+function audInspector(box){ const d=edDoc(); const a=d.audio[ED.selA]; if(!a){ ED.selA=-1; return false; }
+  const dis_=canWrite()?"":" disabled";
+  box.innerHTML=`<div class="row" style="justify-content:space-between"><b>音：${esc(a.name||"音")}</b></div>
+  <div class="edGrid">
+    <label class="f">段<select data-af="track"${dis_}>${AUD_TRACKS.map(k=>`<option value="${k}"${audTrack(a)===k?" selected":""}>${TRACKS.find(x=>x[0]===k)[1]}</option>`).join("")}</select></label>
+    <label class="f">音量<input type="range" min="0" max="1" step="0.05" value="${a.vol==null?0.8:a.vol}" data-af="vol"${dis_}></label>
+    <label class="f">置く位置（秒）<input type="number" step="0.05" min="0" value="${+a.start||0}" data-af="start"${dis_}></label>
+    <label class="f">長さ（秒・0＝最後まで）<input type="number" step="0.05" min="0" value="${+a.len||0}" data-af="len"${dis_}></label>
+    <label class="f">トリミング：開始（秒）<input type="number" step="0.05" min="0" value="${+a.in||0}" data-af="in"${dis_}></label>
+  </div>
+  <div class="note" style="margin-top:6px">タイムラインの帯を横に動かすと位置、右端をつまむと長さ、左端をつまむと頭を切れます。</div>
+  <div class="row" style="margin-top:8px"><button type="button" class="danger small" data-auddel="${ED.selA}"${dis_}>外す</button></div>`; return true; }
+
 function num(id,label,val,step,min,max){ return `<label class="f">${label}<input type="number" id="${id}" data-f="${id.slice(2)}" value="${val}" step="${step}" min="${min}" max="${max}"></label>`; }
 function edInspector(){
-  const box=$("#edInsp"); if(!box) return; const d=edDoc(); const c=d.clips[ED.sel];
+  const box=$("#edInsp"); if(!box) return; if(ED.selA>=0&&audInspector(box)) return; const d=edDoc(); const c=d.clips[ED.sel];
   if(!c){ box.innerHTML=`<b>カットの設定</b><div class="note" style="margin-top:6px">タイムラインのカットを押すと、ここで長さ・寄り・文字などを変えられます。</div>`; return; }
   const dis_=canWrite()?"":" disabled";
   const cams=CAM.filter(x=>c.kind==="video"||x.k!=="hyper");
@@ -725,7 +822,8 @@ document.addEventListener("click",e=>{
   if(t.dataset.addimg){ edAddClip({id:newId(),kind:"image",img:t.dataset.addimg,title:t.dataset.title,dur:1.0,z0:1.05,z1:1.0,x0:0,x1:0,y0:0,y1:0,mono:false,trans:"cut"}); return; }
   if(t.dataset.addvid){ if(!t.dataset.addvid) return; edAddClip({id:newId(),kind:"video",asset:t.dataset.addvid,title:t.dataset.title,dur:5,in:0,z0:1,z1:1,trans:"cut"}); return; }
   if(t.dataset.clip!=null){ ED.sel=+t.dataset.clip; const s=edStarts()[ED.sel]; ED.t=s+0.01; if(ED.playing) edStop(); edTimeline(); edInspector(); edDraw(ED.t); return; }
-  if(t.dataset.auddel!=null){ const k=+t.dataset.auddel; edChange(d=>{ d.audio.splice(k,1); },false); edAudioUI(); return; }
+  if(t.dataset.auddel!=null){ const k=+t.dataset.auddel; edChange(d=>{ d.audio.splice(k,1); }); ED.selA=-1; edInspector(); return; }
+  if(t.dataset.ed==="zin"){ tlZoom(1.5); return; } if(t.dataset.ed==="zout"){ tlZoom(1/1.5); return; }
   const a=t.dataset.ed; if(!a) return;
   if(a==="play"){ if(ED.playing) edStop(); else edPlay(); return; }
   if(a==="stop"){ edStop(); ED.t=0; edDraw(0); return; }
@@ -758,15 +856,15 @@ document.addEventListener("input",e=>{
   if(t.id==="edCam"&&ED.sel>=0){ const p=CAM.find(x=>x.k===t.value); if(!p) return; edChange(d=>{ const c=d.clips[ED.sel]; Object.assign(c,p.v); c.cam=p.k; c.ms=0; c.me=1; if(p.dur) c.dur=p.dur; }); edInspector(); return; }
   if(t.dataset.f&&ED.sel>=0){ const f=t.dataset.f; let v=t.type==="checkbox"?t.checked:t.value; if(t.type==="number"||t.type==="range") v=+v; if(f==="dur") v=Math.max(0.1,v||0.1);
     edChange(d=>{ d.clips[ED.sel][f]=v; }, f==="dur"||f==="mono"||f==="textJa"); return; }
-  if(t.dataset.aud!=null){ const k=+t.dataset.aud, f=t.dataset.af; edChange(d=>{ d.audio[k][f]=+t.value; },false); return; }
+  if(t.dataset.af&&ED.selA>=0){ const f=t.dataset.af; edChange(d=>{ d.audio[ED.selA][f]=f==="track"?t.value:+t.value; }); return; }
 });
 document.addEventListener("change",async e=>{
   if(curPage!=="editor") return; const t=e.target;
   if(t.id==="edProjSel"){ edOpen(t.value); return; }
   if(t.id==="edAspect"){ edChange(d=>{ d.aspect=t.value; },false); return; }
-  if(t.id==="edAudFile"&&t.files[0]&&st.assets){ const f=t.files[0]; t.disabled=true;
+  if((t.id==="edAudFile"||t.dataset.audtrack)&&t.files[0]&&st.assets){ const f=t.files[0]; t.disabled=true; const track=t.dataset.audtrack||"sfx";
     const type=/webm$/i.test(f.name)||/webm/.test(f.type)?"video/webm":"video/mp4";
-    try{ const r=await st.assets.upload(f,{type}); edChange(d=>{ d.audio.push({id:newId(),asset:r.id,name:f.name,start:0,vol:0.8}); },false); edAudioUI(); flash("音を足しました"); }
+    try{ const r=await st.assets.upload(f,{type}); edChange(d=>{ d.audio.push({id:newId(),asset:r.id,name:f.name,track,start:+ED.t.toFixed(2),vol:0.8}); ED.selA=d.audio.length-1; ED.sel=-1; }); edInspector(); flash("音を足しました（再生位置に置きました）"); }
     catch(err){ setErr(err&&err.code==="too_large"?"20MB を超えています。":err&&err.code==="unsupported_type"?"この形式は使えません。m4a・mp4・webm にしてください。":"音を上げられませんでした。"); t.disabled=false; } }
 });
 
@@ -807,7 +905,7 @@ const MM={
   setCamera:({index,key})=>MM.updateClip({index,patch:{cam:key,ms:0,me:1}}),
   moveClip:({from,to})=>{ apiGuard(); const d=edDoc(); const [c]=d.clips.splice(+from,1); d.clips.splice(+to,0,c); apiLog(`カット${+from+1}を${+to+1}番目へ移動`); edSave(); if(ED.mounted){ edTimeline(); edLog(); } return {ok:true}; },
   removeClip:({index})=>{ apiGuard(); const d=edDoc(); d.clips.splice(+index,1); apiLog(`カット${+index+1}を削除`); edSave(); if(ED.mounted){ edTimeline(); edInspector(); edLog(); } return {ok:true}; },
-  addAudio:({asset,name,start,inPoint,len,vol})=>{ apiGuard(); edDoc().audio.push({id:newId(),asset,name:name||"音",start:+start||0,in:+inPoint||0,len:+len||0,vol:vol==null?0.8:+vol}); apiLog(`音を追加：${name||"音"}`); edSave(); if(ED.mounted){ edAudioUI(); edLog(); } return {ok:true}; },
+  addAudio:({asset,name,start,inPoint,len,vol,track})=>{ apiGuard(); edDoc().audio.push({id:newId(),asset,name:name||"音",track:AUD_TRACKS.includes(track)?track:undefined,start:+start||0,in:+inPoint||0,len:+len||0,vol:vol==null?0.8:+vol}); apiLog(`音を追加：${name||"音"}`); edSave(); if(ED.mounted){ edAudioUI(); edLog(); } return {ok:true}; },
   note:({text})=>{ apiGuard(); apiLog(text); edSave(); if(ED.mounted) edLog(); return {ok:true}; },
   play:({from}={})=>{ edPlay(from==null?undefined:+from); return {ok:true}; },
   pause:()=>{ edStop(); return {t:ED.t}; },
@@ -822,7 +920,7 @@ const MM_TOOLS=[
   ["updateClip","カットの設定を変える（patch に変えたい項目）",{index:{type:"number"},patch:{type:"object"}}],
   ["setCamera","カットのカメラワークを変える",{index:{type:"number"},key:{type:"string"}}],
   ["moveClip","カットを移動",{from:{type:"number"},to:{type:"number"}}],["removeClip","カットを削除",{index:{type:"number"}}],
-  ["addAudio","音を足す（asset は動画か音のファイル）",{asset:{type:"string"},name:{type:"string"},start:{type:"number"},inPoint:{type:"number"},len:{type:"number"},vol:{type:"number"}}],
+  ["addAudio","音を足す（asset は動画か音のファイル。track は narr／bgm／sfx）",{asset:{type:"string"},name:{type:"string"},track:{type:"string",enum:["narr","bgm","sfx"]},start:{type:"number"},inPoint:{type:"number"},len:{type:"number"},vol:{type:"number"}}],
   ["note","作業の記録に一言残す",{text:{type:"string"}}],
   ["play","再生",{from:{type:"number"}}],["pause","一時停止",{}],["seek","再生位置へ移動",{t:{type:"number"}}],["exportVideo","動画に書き出す",{}],
 ];
