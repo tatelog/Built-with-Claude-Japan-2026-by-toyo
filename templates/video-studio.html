@@ -1,0 +1,1149 @@
+<title>動画制作室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: プロジェクトハブと同じ製図板の作り。左に目次、右に1枚ずつ。上部に3分の尺を示すタイムコード帯 */
+:root{
+  --paper:#f2f4f3; --sheet:#fbfcfb; --ink:#17232e; --ink-2:#4a5a66; --rule:#cfd8d6; --grid:#e3e9e7;
+  --accent:#1f5f8b; --check:#c8412a; --ok:#2f7a4f; --warn:#a86b00; --muted:#e7ecea;
+  --side:#18242f; --side-fg:#d9e2e6; --side-dim:#8fa1ab; --side-hi:#2a3a47;
+  --s1:#7d8b94; --s2:#5b7d96; --s3:#8a7a5c; --s4:#7a6a8c; --s5:#1f5f8b; --s6:#c8412a;
+  --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0f171d; --sheet:#141e25; --ink:#e3eaee; --ink-2:#9fb0ba; --rule:#2a3843; --grid:#1b2730;
+  --accent:#6fb1de; --check:#f0765e; --ok:#6cc392; --warn:#e2a948; --muted:#1d2a33;
+  --side:#0b1116; --side-fg:#d9e2e6; --side-dim:#7f929d; --side-hi:#1a2731;
+  --s1:#8d9ba4; --s2:#7fa3bd; --s3:#b5a27c; --s4:#a594b8; --s5:#6fb1de; --s6:#f0765e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f171d; --sheet:#141e25; --ink:#e3eaee; --ink-2:#9fb0ba; --rule:#2a3843; --grid:#1b2730;
+  --accent:#6fb1de; --check:#f0765e; --ok:#6cc392; --warn:#e2a948; --muted:#1d2a33;
+  --side:#0b1116; --side-fg:#d9e2e6; --side-dim:#7f929d; --side-hi:#1a2731;
+  --s1:#8d9ba4; --s2:#7fa3bd; --s3:#b5a27c; --s4:#a594b8; --s5:#6fb1de; --s6:#f0765e; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75}
+*{box-sizing:border-box}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100%}
+.side{background:var(--side);color:var(--side-fg);position:sticky;top:0;height:100vh;overflow-y:auto;padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px}
+.brand{display:grid;gap:2px;padding:4px 8px 18px;border-bottom:1px solid var(--side-hi);margin-bottom:14px}
+.brand b{font-weight:900;font-size:17px;line-height:1.35}
+.brand span{font-size:11px;color:var(--side-dim);letter-spacing:.08em}
+.side a.nav{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;color:var(--side-fg);text-decoration:none;font-size:14px}
+.side a.nav:hover{background:var(--side-hi)}
+.side a.nav[aria-current="page"]{background:var(--side-hi);box-shadow:inset 3px 0 0 var(--accent)}
+.side a.nav .no{font-family:var(--f-mono);font-size:11px;color:var(--side-dim);width:30px;flex:none}
+.side a.nav .cnt{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--side-dim)}
+.side .back{margin-top:18px;border-top:1px solid var(--side-hi);padding-top:14px}
+.side .back a{color:var(--side-dim);font-size:13px;padding:4px 8px;display:block;text-decoration:none}
+.side .back a:hover{color:var(--side-fg)}
+main{min-width:0;padding-block:24px 64px;padding-left:max(16px,clamp(16px,4vw,48px));padding-right:max(16px,env(safe-area-inset-right,0px),clamp(16px,4vw,48px))}
+.topbar{display:none}
+.sheet{max-width:1100px;margin:0 auto}
+.titleblock{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:end;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:18px}
+.titleblock h1{margin:0;font-weight:900;font-size:clamp(22px,3vw,30px);line-height:1.3;text-wrap:balance}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;color:var(--ink-2)}
+.stamp{font-family:var(--f-mono);font-size:11.5px;border:1.5px solid currentColor;padding:2px 8px;border-radius:3px;white-space:nowrap;color:var(--warn)}
+h2{font-weight:700;font-size:18px;margin:30px 0 10px;text-wrap:balance}
+p,li{max-width:68ch}
+.note{color:var(--ink-2);font-size:13.5px}
+.status{font-size:12.5px;color:var(--ink-2);min-height:1.2em;margin:6px 0}
+.status.err{color:var(--check)}
+.panel{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:16px 18px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.chip{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--rule);background:var(--muted);white-space:nowrap;line-height:1.7}
+.chip.ok{color:var(--ok);border-color:currentColor;background:transparent}
+.chip.warn{color:var(--warn);border-color:currentColor;background:transparent}
+.chip.ng{color:var(--check);border-color:currentColor;background:transparent}
+input,select,textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:6px 8px;min-width:0;width:100%}
+textarea{min-height:64px;resize:vertical;line-height:1.6}
+label.f{display:grid;gap:2px;font-size:12px;color:var(--ink-2)}
+button{font:inherit;font-size:13.5px;cursor:pointer;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:var(--sheet);padding:6px 14px}
+button.ghost{background:transparent;color:var(--accent)}
+button.danger{background:transparent;border-color:var(--check);color:var(--check)}
+button.small{font-size:12px;padding:2px 9px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.empty{border:1px dashed var(--rule);border-radius:8px;padding:18px;color:var(--ink-2);font-size:13.5px;background:var(--sheet)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* タイムコード帯（3:00） */
+.tc{border:1px solid var(--rule);border-radius:8px;background:var(--sheet);padding:10px 12px 8px}
+.tc .bar{position:relative;height:30px;border-radius:4px;overflow:hidden;background:var(--muted)}
+.tc .seg{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 6px;color:var(--sheet);font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-decoration:none;border-right:1px solid var(--sheet)}
+.tc .ticks{position:relative;height:16px;margin-top:3px}
+#tl{cursor:pointer}
+.tc .ticks span{position:absolute;transform:translateX(-50%);font-family:var(--f-mono);font-size:10.5px;color:var(--ink-2)}
+.tc .ticks span:first-child{transform:none}
+.tc .ticks span:last-child{transform:translateX(-100%)}
+.tc .marks{position:absolute;inset:0;pointer-events:none}
+.tc .head{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--check);pointer-events:none}
+
+/* 絵コンテ */
+.boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:14px}
+.board{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;overflow:hidden;display:grid;grid-template-rows:auto 1fr;min-width:0}
+.frame{aspect-ratio:16/9;max-width:100%;background:var(--muted);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px;position:relative;display:grid;place-items:center;color:var(--ink-2);font-size:12.5px}
+.frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.frame .tcb{position:absolute;left:8px;top:8px;font-family:var(--f-mono);font-size:11px;background:var(--ink);color:var(--sheet);padding:1px 7px;border-radius:3px}
+.board .body{padding:12px 14px;display:grid;gap:8px;align-content:start;min-width:0}
+.board h3{margin:0;font-size:16px;line-height:1.45}
+.kv{display:grid;grid-template-columns:5.2em minmax(0,1fr);gap:3px 10px;font-size:13px}
+.kv dt{color:var(--ink-2)} .kv dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.edit{display:grid;gap:8px;border-top:1px dashed var(--rule);padding-top:10px}
+.sb{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
+.sbDetail .board{grid-template-rows:auto 1fr}
+.sbList{display:grid;gap:6px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto}
+.sbRow{display:grid;grid-template-columns:10px auto minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;background:var(--sheet);color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:8px 10px}
+.sbRow[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.sbRow .sbTc{font-size:12px;color:var(--ink-2)}
+.sbRow .sbTitle{display:grid;min-width:0}
+.sbRow .sbTitle b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbRow .sbTitle .note{font-size:11.5px}
+.steps{display:grid;gap:8px;padding-left:1.4em}
+@media (max-width:900px){.sb{grid-template-columns:minmax(0,1fr)}.sbList{order:-1;position:static;max-height:none}}
+.ed{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+.edStage{background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;max-width:100%}
+.edStage canvas{width:100%;height:100%;display:block}
+.edTL{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet);padding:8px}
+.edTrack{position:relative;height:96px}
+.edTicks{position:absolute;left:0;right:0;top:0;height:16px}
+.edTicks span{position:absolute;font-family:var(--f-mono);font-size:10.5px;color:var(--ink-2)}
+.edClip{position:absolute;top:20px;height:70px;padding:0;border:1px solid var(--rule);border-radius:4px;background:var(--muted);color:var(--ink);overflow:hidden;display:block;text-align:left}
+.edClip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85}
+.edClip span{position:absolute;left:4px;right:4px;bottom:3px;font-size:10.5px;line-height:1.3;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edClip.sel{outline:3px solid var(--accent);outline-offset:-1px;z-index:2}
+.edPH{position:absolute;top:16px;bottom:0;width:2px;background:var(--check);pointer-events:none}
+.edLib{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;max-height:340px;overflow-y:auto}
+.edThumb{padding:0;border:1px solid var(--rule);background:var(--muted);border-radius:4px;overflow:hidden;display:grid;color:var(--ink);text-align:left}
+.edThumb img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.edThumb span{font-size:10.5px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+@media (max-width:900px){.ed{grid-template-columns:minmax(0,1fr)}}
+.withPkg{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.pkg{border:1px solid var(--rule);border-radius:8px;background:var(--sheet);padding:10px;display:grid;gap:8px;min-width:0}
+.ed .pkg{max-height:440px;overflow-y:auto}
+.withPkg>.pkg{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto}
+.pkgHd{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pkgList{display:grid;gap:6px}
+.pkgItem{position:relative;min-width:0}
+.pkgMain{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:center;width:100%;padding:4px;border:1px solid var(--rule);border-radius:6px;background:var(--muted);color:var(--ink);text-align:left;font:inherit}
+button.pkgMain{cursor:pointer}button.pkgMain:hover{border-color:var(--accent)}
+.pkgMain img,.pkgNo{width:64px;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:3px;background:var(--sheet)}
+.pkgNo{display:grid;place-items:center;font-size:10px;color:var(--ink-2)}
+.pkgT{display:grid;gap:2px;min-width:0;padding-right:18px}.pkgT b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pkgT .note{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pkgX{position:absolute;top:-6px;right:-6px;width:26px;height:26px;padding:0;border-radius:50%;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);font-size:15px;line-height:1;display:grid;place-items:center;opacity:0;transform:scale(.8);transition:opacity .12s,transform .12s;cursor:pointer}
+.pkgItem:hover .pkgX,.pkgX.near,.pkgX:focus-visible{opacity:1;transform:scale(1)}
+.pkgX:hover{background:var(--check);color:#fff;border-color:var(--check)}
+@media (hover:none){.pkgX{opacity:.9;transform:none;width:22px;height:22px;font-size:13px;top:-5px;right:-5px}}
+.pkgBack{position:absolute;top:50%;right:6px;transform:translateY(-50%)}
+.pkgAsk{border:1px solid var(--check);border-radius:6px;padding:8px;font-size:12.5px;display:grid;gap:6px}
+.pkgAsk ul{margin:0;padding-left:18px}
+.pkgChk{display:inline-flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;white-space:nowrap}
+.pkgChk input{width:18px;height:18px;margin:0}
+.gi.inPkg{outline:2px solid var(--accent);outline-offset:-1px}
+@media (max-width:900px){.withPkg{grid-template-columns:minmax(0,1fr)}.withPkg>.pkg{order:-1;position:static;max-height:46vh}}
+.tlWrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet);margin-top:8px;-webkit-overflow-scrolling:touch}
+.tlInner{position:relative;padding-bottom:6px}
+.tlRow{display:flex;border-bottom:1px solid var(--rule)}
+.tlRow:last-of-type{border-bottom:0}
+.tlLbl{position:sticky;left:0;z-index:4;flex:0 0 96px;width:96px;background:var(--muted);border-right:1px solid var(--rule);padding:6px 8px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:4px}
+.tlLane{position:relative;height:56px;flex:none}
+.tlRow[data-track="video"] .tlLane{height:76px}
+.tlRow[data-track="text"] .tlLane{height:34px}
+.tlRulerRow .tlLane{height:26px;cursor:pointer;touch-action:none}
+.tlRuler span{position:absolute;top:5px;font-family:var(--f-mono);font-size:10.5px;color:var(--ink-2);padding-left:3px;border-left:1px solid var(--rule)}
+.tlBar{position:absolute;top:6px;bottom:6px;border-radius:5px;overflow:hidden;border:1px solid rgba(0,0,0,.25);background:#5b6b78;color:#fff;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.tlBar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85;pointer-events:none}
+.tlBar.txt{background:#111}
+.tlBar.t{background:#2b2f36;cursor:pointer}
+.tlBar.a.narr{background:#2f6d5a}.tlBar.a.bgm{background:#5a4f8a}.tlBar.a.sfx{background:#8a5a2f}
+.tlBar.sel{outline:3px solid var(--accent);outline-offset:-1px;z-index:3}
+.tlT{position:absolute;left:12px;right:12px;bottom:4px;font-size:11px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #000;pointer-events:none}
+.tlVol{position:absolute;right:12px;bottom:0;width:3px;background:rgba(255,255,255,.6);pointer-events:none}
+.tlH{position:absolute;top:0;bottom:0;width:12px;z-index:2;cursor:ew-resize;background:rgba(255,255,255,.18)}
+.tlH.l{left:0}.tlH.r{right:0}
+.tlBar.t .tlH{display:none}
+.tlPH{position:absolute;top:0;bottom:0;width:2px;background:var(--check);pointer-events:none;z-index:6}
+.tlAdd{cursor:pointer;color:var(--accent);font-size:16px;line-height:1;padding:2px 6px;border:1px solid var(--accent);border-radius:4px}
+.tlEmpty{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--ink-2);white-space:nowrap}
+.edLogList{margin:0;padding-left:1.4em;font-size:13px;display:grid;gap:2px;max-height:220px;overflow-y:auto}
+#agentBox summary{cursor:pointer}
+.chipbtn{cursor:pointer;font:inherit;font-size:12px;padding:2px 10px}
+.chipbtn[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:1px;font-weight:700}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px;margin-bottom:8px}
+.gi{margin:0;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;overflow:hidden;display:grid;grid-template-rows:auto 1fr;min-width:0}
+.gi img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--muted)}
+.gi figcaption{padding:8px 10px;display:grid;gap:3px;font-size:13px;min-width:0;overflow-wrap:anywhere}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:baseline}
+
+/* シナリオ */
+.script{display:grid;gap:14px}
+.sc{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;display:grid;gap:10px;min-width:0}
+.sc .hd{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline}
+.sc .hd b{font-size:16px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
+.cols .c{min-width:0}
+.cols .c h4{margin:0 0 4px;font-size:12px;color:var(--ink-2);font-weight:500;letter-spacing:.04em}
+.cols .c .tx{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.cols .c .tx.en{font-size:13.5px}
+.cols .c .tx.blank{color:var(--ink-2);font-size:13px}
+.meter{font-size:12px;color:var(--ink-2)}
+.meter.over{color:var(--check);font-weight:700}
+
+/* ビューワー */
+.viewer{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+.screen{background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;max-width:100%;display:grid;place-items:center;position:relative}
+.screen video{width:100%;height:100%;display:block;background:#000}
+.screen .ph{color:#9aa8b1;font-size:13.5px;padding:16px;text-align:center}
+.now{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin:10px 0 6px}
+.now .t{font-family:var(--f-mono);font-size:20px;font-variant-numeric:tabular-nums}
+.cutlist{display:grid;gap:6px}
+.cut{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:7px 10px}
+.cut[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.cut b{font-size:14px}
+
+@media (max-width:900px){
+  .viewer{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;inset:0 auto 0 0;width:min(86vw,290px);height:100%;z-index:30;transform:translateX(-102%);transition:transform .2s ease;padding-top:calc(20px + env(safe-area-inset-top,0px))}
+  .side.open{transform:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.35)}
+  .topbar{display:flex;align-items:center;gap:10px;position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--paper);border-bottom:1px solid var(--rule);padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:25;background:var(--paper)}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:16px}
+  .titleblock{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.side{transition:none}}
+</style>
+
+<div class="topbar">
+  <button class="ghost small" id="menuBtn" aria-controls="side" aria-expanded="false">目次</button>
+  <b id="topName">動画制作室</b>
+</div>
+<div class="app">
+  <nav class="side" id="side" aria-label="ページ目次">
+    <div class="brand"><b id="brandName">動画制作室</b><span id="brandSub"></span></div>
+    <div id="navList"></div>
+    <div class="back" id="hubBack" hidden><a id="hubLink" href="#" target="_blank" rel="noopener">← プロジェクトハブへ</a></div>
+  </nav>
+  <main><div class="sheet" id="view"></div></main>
+</div>
+
+<script>
+(function(){
+"use strict";
+// プロジェクト固有の情報は共有データ meta/project から読む（name, subtitle, hubUrl, totalSec, summary, rules[]）
+let HUB=""; let TOTAL=180;
+function applyProject(){ const p=st.project||{}; HUB=/^https:\/\//.test(p.hubUrl||"")?p.hubUrl:""; TOTAL=Math.max(10,+p.totalSec||180);
+  const name=p.name||"動画制作室"; document.title=name; const a=$("#topName"), b=$("#brandName"), c=$("#brandSub"), hb=$("#hubBack"), hl=$("#hubLink");
+  if(a) a.textContent=name; if(b) b.textContent=name; if(c) c.textContent=p.subtitle||("尺 "+fmt0(TOTAL));
+  if(hb&&hl){ hb.hidden=!HUB; if(HUB) hl.href=HUB; } }
+const PAGES=[
+  {id:"top",no:"V-00",name:"概要"},
+  {id:"storyboard",no:"V-01",name:"絵コンテ",cnt:"scenes"},
+  {id:"scenario",no:"V-02",name:"シナリオ",cnt:"scenes"},
+  {id:"viewer",no:"V-03",name:"ビューワーとコメント"},
+  {id:"materials",no:"V-04",name:"素材集め",cnt:"mat"},
+  {id:"editor",no:"V-05",name:"編集（ムービーメーカー）"}
+];
+const STATUS=["未着手","案","確定"];
+const READ_CPS=5; // 日本語ナレーションの読み上げ目安：1秒あたり約5文字（1分300字）
+
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const toSec=v=>{const m=String(v||"").trim().match(/^(\d+):(\d{1,2})(?:\.(\d))?$/); return m?(+m[1]*60+ +m[2]+(m[3]?+m[3]/10:0)):null;};
+const fmt=s=>{s=Math.max(0,s||0); const m=Math.floor(s/60), r=s-m*60; return m+":"+(r<10?"0":"")+r.toFixed(1);};
+const fmt0=s=>{s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");};
+const segColor=i=>`var(--s${Math.min(6,i+1)})`;
+const jaLen=t=>String(t||"").replace(/\s/g,"").length;
+
+const st={db:null,user:null,assets:null,ready:false,err:"",readOnly:false,scenes:[],cuts:[],materials:[],mf:{group:"すべて",apply:"すべて",check:"すべて"},style:null,me:null,cm:null,ca:null,caState:"",threads:[],cmode:false,
+  project:null, editing:{}, pkg:[], pkgView:"in", pkgAsk:null, cutId:null, localUrl:"", localName:"", cur:0, names:{}};
+
+// ---------- 接続 ----------
+function setErr(m){st.err=m; const el=$("#liveStatus"); if(el){el.className="status"+(m?" err":""); el.textContent=m||statusText();}}
+function statusText(){ if(!st.db) return "共有データにつないでいます…"; if(!st.ready) return "読み込み中…"; return st.readOnly?"閲覧のみです。書き込みには編集権限が必要です。":""; }
+async function write(fn,okMsg){
+  if(!st.db||st.readOnly) return false;
+  try{ await fn(); setErr(""); if(okMsg) flash(okMsg); return true; }
+  catch(e){
+    const c=e&&e.code;
+    if(c==="invalid_argument"||c==="not_granted"){st.readOnly=true; setErr("この表示では書き込めません。閲覧のみになります。");}
+    else if(c==="quota_exceeded"||c==="resource_exhausted"){setErr("保存できる量の上限です。不要なコメントを削除してください。");}
+    else setErr("保存できませんでした。通信を確認して、もう一度お試しください。");
+    render(); return false;
+  }
+}
+function flash(m){const el=$("#liveStatus"); if(!el) return; el.className="status"; el.textContent=m; clearTimeout(flash.t); flash.t=setTimeout(()=>{ if(el.textContent===m) el.textContent=statusText(); },2500);}
+
+function start(){
+  if(!window.claude||!window.claude.use){ setErr("この表示では共有データを使えません。"); return; }
+  window.claude.use("user").then(async u=>{ st.user=u; if(u){ try{st.me=await u.id();}catch(_){} } render(); });
+  window.claude.use("assets").then(a=>{ st.assets=a; render(); });
+  window.claude.use("comments").then(c=>{ st.cm=c; syncAnchoring(); render(); });
+  window.claude.use("db").then(db=>{
+    if(!db){ setErr("共有データを使えません（サインインが必要です）。"); render(); return; }
+    st.db=db; render();
+    const timer=setTimeout(()=>{ if(!st.ready) setErr("共有データにまだ届きません。通信を確認してください。"); },10000);
+    let n=0; const got=()=>{ if(++n>=3){ clearTimeout(timer); st.ready=true; if(st.err.startsWith("共有データにまだ")) st.err=""; } };
+    const sub=(name,order,key)=>{ let first=true;
+      db.collection(name).orderBy(order,"asc").onSnapshot(s=>{
+        st[key]=s.docs.map(d=>({id:d.id,...d.data()}));
+        if(first&&!s.metadata.fromCache){first=false; got();}
+        if(key==="cuts"&&!st.cutId&&st.cuts.length) st.cutId=st.cuts[st.cuts.length-1].id;
+        render();
+      },e=>{ clearTimeout(timer); setErr("読み込めませんでした（"+e.code+"）"); render(); });
+    };
+    db.doc("meta/style").onSnapshot(d=>{ st.style=d.exists?d.data():null; render(); },()=>{});
+    db.doc("meta/project").onSnapshot(d=>{ st.project=d.exists?d.data():null; applyProject(); render.force=true; render(); },()=>{});
+    sub("scenes","order","scenes"); sub("cuts","createdAt","cuts"); sub("materials","order","materials");
+    db.collection("edits").onSnapshot(s=>edOnList(s.docs.map(d=>Object.assign({id:d.id},d.data()))),()=>{});
+    db.collection("pkg").onSnapshot(s=>{ st.pkg=s.docs.map(d=>Object.assign({id:d.id},d.data())); pkgUpdate(); },()=>{});
+  }).catch(()=>{ setErr("共有データを使えません。"); render(); });
+}
+
+// ---------- 共通部品 ----------
+function sceneAt(t){ return st.scenes.find(s=>{const a=toSec(s.tcIn),b=toSec(s.tcOut); return a!=null&&b!=null&&t>=a&&t<b;}); }
+function tcStrip(opts={}){
+  const segs=st.scenes.map((s,i)=>{const a=toSec(s.tcIn),b=toSec(s.tcOut); if(a==null||b==null) return "";
+    const href=opts.link?` href="#${opts.link}" data-scene="${esc(s.id)}"`:"";
+    return `<a class="seg"${href} style="left:${a/TOTAL*100}%;width:${(b-a)/TOTAL*100}%;background:${segColor(i)}" title="${esc(s.tcIn)}–${esc(s.tcOut)} ${esc(s.era||"")}">${esc(s.era||s.title||"")}</a>`;}).join("");
+  const tstep=TOTAL<=60?10:TOTAL<=240?30:60; const ticks=Array.from({length:Math.floor(TOTAL/tstep)+1},(_,k)=>k*tstep).map(t=>`<span style="left:${t/TOTAL*100}%">${fmt0(t)}</span>`).join("");
+  const marks=opts.timeline?`<div class="marks"><span class="head" id="playhead" style="left:${Math.min(100,st.cur/TOTAL*100)}%"></span></div>`:"";
+  return `<div class="tc"><div class="bar"${opts.timeline?' id="tl"':""}>${segs||""}${marks}</div><div class="ticks">${ticks}</div></div>`;
+}
+function head(p,stamp){
+  return `<div class="titleblock"><div><div class="eyebrow">${p.no} ・ ${esc((st.project&&st.project.name)||"動画")}</div><h1>${esc(p.name)}</h1></div>${stamp?`<span class="stamp">${esc(stamp)}</span>`:""}</div><div id="liveStatus" class="status"></div>`;
+}
+const canWrite=()=>!!st.db&&!st.readOnly;
+const dis=()=>canWrite()?"":" disabled";
+function loadingOr(emptyHtml){ if(!st.ready&&!st.err) return `<div class="empty">読み込み中…</div>`; return emptyHtml; }
+
+// ---------- V-00 概要 ----------
+function pageTop(){
+  const done=st.scenes.filter(s=>s.status==="確定").length; const p=st.project||{};
+  const rules=Array.isArray(p.rules)?p.rules:[];
+  const steps=[[!!st.project,"プロジェクト名・尺・ハブの URL を入れる","Claude に「動画制作ページの基本情報を入れて」と頼む（meta/project）"],
+    [!!st.style,"トーン（目指す雰囲気と参考動画）を決める","Claude に参考動画とトーンを伝える（meta/style）"],
+    [st.scenes.length>0,"場面を作る（絵コンテ・シナリオ）","Claude に筋書きを伝えて「場面に分けて」と頼む（scenes）"],
+    [st.materials.length>0,"素材を集める","Claude に「使える素材を探して」と頼む。権利の根拠も一緒に記録します（materials）"],
+    [st.pkg.some(x=>x.state==="in"),"使う素材をパッケージに入れる","素材集めで「パッケージ」にチェック"],
+    [st.edits.some(e=>(e.clips||[]).length),"編集で並べる","編集ページで、右のパッケージから写真を押してタイムラインに置く"],
+    [st.cuts.length>0,"書き出した動画を見てコメントする","ビューワーで「版を追加」して、再生位置にコメント"]];
+  return `${p.summary?`<p>${esc(p.summary)}</p>`:`<p>動画を作るための部屋です。絵コンテ・シナリオ・素材・編集・ビューワーを、ひとつのページで行き来します。</p>`}
+  ${tcStrip({link:"storyboard"})}
+  <div class="grid2" style="margin-top:16px">
+    <a class="panel" href="#storyboard" style="text-decoration:none;color:inherit"><div class="eyebrow">V-01</div><b>絵コンテ</b><div class="note">場面ごとの映像・尺・素材。コマ画像を貼れます。</div><div class="row" style="margin-top:6px"><span class="chip">${st.scenes.length} 場面</span><span class="chip ok">確定 ${done}</span></div></a>
+    <a class="panel" href="#scenario" style="text-decoration:none;color:inherit"><div class="eyebrow">V-02</div><b>シナリオ</b><div class="note">ナレーション原稿・英語字幕・画面の文字。読み上げ秒数を尺と比べます。</div></a>
+    <a class="panel" href="#materials" style="text-decoration:none;color:inherit"><div class="eyebrow">V-04</div><b>素材集め</b><div class="note">素材と権利の確認状況。使うものはパッケージへ。</div><div class="row" style="margin-top:6px"><span class="chip">${st.materials.length} 点</span><span class="chip">パッケージ ${st.pkg.filter(x=>x.state==="in").length}</span></div></a>
+    <a class="panel" href="#editor" style="text-decoration:none;color:inherit"><div class="eyebrow">V-05</div><b>編集</b><div class="note">パッケージの素材をタイムラインに並べて、動画に書き出します。</div></a>
+    <a class="panel" href="#viewer" style="text-decoration:none;color:inherit"><div class="eyebrow">V-03</div><b>ビューワーとコメント</b><div class="note">書き出した動画を見ながら、再生位置にコメントを付けます。</div><div class="row" style="margin-top:6px"><span class="chip">版 ${st.cuts.length}</span></div></a>
+  </div>
+  <h2>進め方</h2>
+  <ol class="steps">${steps.map(([ok,t,how])=>`<li><span class="chip ${ok?"ok":""}">${ok?"済み":"まだ"}</span> <b>${esc(t)}</b><div class="note">${esc(how)}</div></li>`).join("")}</ol>
+  ${rules.length?`<h2>決まっていること</h2><ul>${rules.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<h2>決まっていること</h2><div class="empty">まだありません。尺・締切・使ってはいけない素材などを、Claude に伝えるとここに並びます（meta/project の rules）。</div>`}
+  ${HUB?`<p class="note">企画・工程・タスクは <a href="${esc(HUB)}" target="_blank" rel="noopener">プロジェクトハブ</a> にあります。</p>`:""}`;
+}
+
+// ---------- V-01 絵コンテ ----------
+function boardCard(s,i){
+  const ed=st.editing["b:"+s.id];
+  const a=toSec(s.tcIn),b=toSec(s.tcOut); const len=(a!=null&&b!=null)?(b-a):null;
+  const img=s.frame?`<img src="/_blob/${esc(s.frame)}" alt="${esc(s.title||"")} のコマ" loading="lazy">`:`<span>コマ未作成</span>`;
+  const stc=s.status==="確定"?"ok":s.status==="案"?"warn":"";
+  let h=`<article class="board" id="sc-${esc(s.id)}"><div class="frame">${img}<span class="tcb">${esc(s.tcIn||"")}–${esc(s.tcOut||"")}${len!=null?` ・ ${len}秒`:""}</span></div>
+    <div class="body"><div class="row"><span class="sw" style="background:${segColor(i)}"></span><span class="eyebrow">場面 ${i+1} ・ ${esc(s.era||"")}</span><span class="chip ${stc}" style="margin-left:auto">${esc(s.status||"未着手")}</span></div>
+    <h3>${esc(s.title||"")}</h3>
+    <dl class="kv"><dt>映像</dt><dd>${esc(s.picture||"—")}</dd><dt>画面の文字</dt><dd>${esc(s.onscreen||"—")}</dd><dt>素材</dt><dd>${esc(s.materials||"—")}</dd><dt>撮り方</dt><dd>${esc(s.shot||"—")}</dd>${s.ref?`<dt>参考</dt><dd>${esc(s.ref)}</dd>`:""}</dl>`;
+  if(ed){
+    h+=`<form class="edit" data-form="board" data-id="${esc(s.id)}">
+      <div class="row" style="flex-wrap:nowrap"><label class="f" style="flex:1">開始<input id="b-in-${esc(s.id)}" name="tcIn" value="${esc(s.tcIn||"")}" placeholder="0:00"></label><label class="f" style="flex:1">終了<input id="b-out-${esc(s.id)}" name="tcOut" value="${esc(s.tcOut||"")}" placeholder="0:20"></label><label class="f" style="flex:1.3">状態<select id="b-st-${esc(s.id)}" name="status">${STATUS.map(x=>`<option${x===(s.status||"未着手")?" selected":""}>${x}</option>`).join("")}</select></label></div>
+      <label class="f">見出し<input id="b-ti-${esc(s.id)}" name="title" value="${esc(s.title||"")}"></label>
+      <label class="f">映像<textarea id="b-pi-${esc(s.id)}" name="picture">${esc(s.picture||"")}</textarea></label>
+      <label class="f">画面の文字<textarea id="b-on-${esc(s.id)}" name="onscreen">${esc(s.onscreen||"")}</textarea></label>
+      <label class="f">素材<textarea id="b-ma-${esc(s.id)}" name="materials">${esc(s.materials||"")}</textarea></label>
+      <label class="f">撮り方（カメラ位置・尺）<textarea id="b-sh-${esc(s.id)}" name="shot">${esc(s.shot||"")}</textarea></label>
+      <label class="f">参考（手本にする広告の手法）<textarea id="b-rf-${esc(s.id)}" name="ref">${esc(s.ref||"")}</textarea></label>
+      ${st.assets?`<label class="f">コマ画像（PNG・JPEG、20MB まで）<input id="b-fr-${esc(s.id)}" type="file" accept="image/png,image/jpeg,image/webp" data-frame="${esc(s.id)}"></label>`:`<div class="note">コマ画像を貼れるのは編集権限のある人だけです。</div>`}
+      <div class="row"><button type="submit">保存</button><button type="button" class="ghost" data-act="cancel" data-key="b:${esc(s.id)}">閉じる</button></div></form>`;
+  } else {
+    h+=`<div class="row"><button type="button" class="ghost small" data-act="edit" data-key="b:${esc(s.id)}"${dis()}>書き込む</button></div>`;
+  }
+  return h+`</div></article>`;
+}
+function tonePanel(){
+  const y=st.style; if(!y) return "";
+  const pts=Array.isArray(y.points)?y.points:[]; const refs=Array.isArray(y.refs)?y.refs:[];
+  return `<section class="panel" style="margin-bottom:14px;display:grid;gap:8px"><div class="eyebrow">トーン</div><b style="font-size:16px">${esc(y.title||"")}</b>
+    ${pts.length?`<ul style="margin:0;padding-left:1.2em">${pts.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+    ${refs.length?`<div class="note" style="display:grid;gap:4px">${refs.map(r=>`<div><b>${/^https:\/\//.test(r.url||"")?`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a>`:esc(r.name)}</b>：${esc(r.note||"")}</div>`).join("")}</div>`:""}</section>`;
+}
+function pageStoryboard(){
+  let h=`<p class="note">場面ごとの映像の中身と尺。右の一覧か上の帯で場面を選ぶと、左に詳細が出ます。「書き込む」で各欄を直せます。</p>${tonePanel()}${tcStrip({link:"storyboard"})}<div style="height:14px"></div>`;
+  if(!st.scenes.length) return h+loadingOr(`<div class="empty">場面がまだありません。<br>ここには場面ごとのコマ画像・映像の中身・尺・素材・撮り方が並びます。<br>最初の一歩：Claude に筋書きを伝えて「場面に分けて」と頼んでください。</div>`);
+  if(!st.scenes.some(x=>x.id===st.sbSel)) st.sbSel=st.scenes[0].id;
+  const i=st.scenes.findIndex(x=>x.id===st.sbSel);
+  const rows=st.scenes.map((x,k)=>{ const a=toSec(x.tcIn),b=toSec(x.tcOut); const stc=x.status==="確定"?"ok":x.status==="案"?"warn":"";
+    return `<button type="button" class="sbRow" data-sb="${esc(x.id)}" aria-current="${x.id===st.sbSel}"><span class="sw" style="background:${segColor(k)}"></span>
+      <span class="mono sbTc">${esc(x.tcIn||"")}–${esc(x.tcOut||"")}</span><span class="sbTitle"><span class="note">場面 ${k+1} ・ ${esc(x.era||"")}${a!=null&&b!=null?` ・ ${b-a}秒`:""}</span><b>${esc(x.title||"")}</b></span><span class="chip ${stc}">${esc(x.status||"未着手")}</span></button>`; }).join("");
+  return h+`<div class="sb"><div class="sbDetail">${boardCard(st.scenes[i],i)}</div><nav class="sbList" aria-label="場面の一覧">${rows}</nav></div>`;
+}
+
+// ---------- V-04 素材集め ----------
+const MSTATUS=["候補","使う","使わない"];
+const APPLY=["不要","必要","要確認","—"];
+const CHECK=["確認済み","確認中","未着手"];
+const APPLY_CLS={"不要":"ok","必要":"ng","要確認":"warn"};
+const CHECK_CLS={"確認済み":"ok","確認中":"warn","未着手":""};
+const RIGHT_CLS=r=>/パブリック|PD|CC0|CC BY|自社|自作/.test(r||"")?"ok":/要確認|不明/.test(r||"")?"warn":/不可|使わない/.test(r||"")?"ng":"";
+const TH=t=>`<th style="text-align:left;padding:8px 10px;white-space:nowrap">${t}</th>`;
+const TD=(x,extra="")=>`<td style="padding:8px 10px;vertical-align:top${extra}">${x}</td>`;
+const sel=(name,id,opts,val)=>`<select aria-label="${name}" data-mfield="${name}" data-mid="${esc(id)}" style="width:auto;font-size:12.5px"${dis()}>${opts.map(x=>`<option${x===val?" selected":""}>${x}</option>`).join("")}</select>`;
+function matOk(m){ const f=st.mf;
+  return (f.group==="すべて"||m.group===f.group)&&(f.apply==="すべて"||(m.apply||"要確認")===f.apply)&&(f.check==="すべて"||(m.check||"未着手")===f.check); }
+function pageMaterials(){ return `<div class="withPkg"><div style="min-width:0">${pageMaterialsMain()}</div>${pkgPanel("mat")}</div>`; }
+function pageMaterialsMain(){
+  const f=st.mf;
+  const groups=["すべて",...new Set(st.materials.map(m=>m.group).filter(Boolean))];
+  const list=st.materials.filter(matOk);
+  const cnt=(k,v,d)=>st.materials.filter(m=>(m[k]||d)===v).length;
+  const fsel=(id,label,opts,val)=>`<label class="note" for="${id}">${label}</label><select id="${id}" style="width:auto">${["すべて",...opts].map(g=>`<option${g===val?" selected":""}>${esc(g)}</option>`).join("")}</select>`;
+  let h=`<p class="note">動画に使う写真・図面の候補。使うものは「パッケージ」にチェックを入れると、右の一覧に入り、編集ページからも同じ一覧が使えます。「申請」は使う前に持ち主への申請や許諾が要るか、「確認」は権利の根拠をこちらで確かめ終えたかを表します。チップを押すと、その状態だけに絞り込めます。</p>
+    <div class="grid2" style="margin:8px 0 12px">
+      <div class="panel" style="display:grid;gap:6px"><b style="font-size:13px">申請</b><div class="row">${APPLY.filter(x=>x!=="—").map(x=>`<button type="button" class="chipbtn chip ${APPLY_CLS[x]||""}" data-mf="apply" data-v="${x}" aria-pressed="${f.apply===x}">${x} ${cnt("apply",x,"要確認")}</button>`).join("")}</div></div>
+      <div class="panel" style="display:grid;gap:6px"><b style="font-size:13px">確認</b><div class="row">${CHECK.map(x=>`<button type="button" class="chipbtn chip ${CHECK_CLS[x]||""}" data-mf="check" data-v="${x}" aria-pressed="${f.check===x}">${x} ${cnt("check",x,"未着手")}</button>`).join("")}</div></div>
+    </div>
+    <div class="row" style="margin:0 0 12px">${fsel("mfGroup","分類",groups.slice(1),f.group)}${fsel("mfApply","申請",APPLY,f.apply)}${fsel("mfCheck","確認",CHECK,f.check)}${(f.group+f.apply+f.check)!=="すべてすべてすべて"?`<button type="button" class="ghost small" data-mfclear="1">絞り込みを解除</button>`:""}<span class="note">${list.length}件</span></div>`;
+  if(!list.length) return h+loadingOr(st.materials.length?`<div class="empty">条件に合う素材はありません。</div>`:`<div class="empty">素材がまだありません。<br>ここには写真・図面などの候補と、権利の根拠・申請の要否・確認状況が並びます。<br>最初の一歩：Claude に「使える素材を探して」と頼んでください。権利がはっきりしたものだけを、根拠と一緒に入れます。</div>`);
+  const chips=m=>`<span class="chip ${APPLY_CLS[m.apply]||""}">申請 ${esc(m.apply||"要確認")}</span> <span class="chip ${CHECK_CLS[m.check]||""}">${esc(m.check||"未着手")}</span> <span class="chip">${esc(m.status||"候補")}</span>`;
+  const pics=list.filter(m=>m.img);
+  h+=`<h2 style="margin-top:8px">画像 <span class="note">${pics.length}点</span></h2>`+(pics.length?`<div class="gal">${pics.map(m=>`<figure class="gi${pkgIn(m.id)?" inPkg":""}"><a href="/_blob/${esc(m.img)}" target="_blank" rel="noopener"><img src="/_blob/${esc(m.img)}" alt="${esc(m.title)}" loading="lazy"></a><figcaption><b>${esc(m.title)}</b><span class="note">${esc(m.source||"")}</span><span>${chips(m)}</span>${m.credit?`<span class="note">クレジット：${esc(m.credit)}</span>`:""}${pkgChk(m)}</figcaption></figure>`).join("")}</div>`:`<div class="empty">この条件の画像はありません。下の一覧の「画像を貼る」から追加できます。</div>`);
+  h+=`<h2>一覧</h2><div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)"><table style="border-collapse:collapse;width:100%;min-width:980px;font-size:13.5px">
+    <tr style="background:var(--muted)">${TH("素材")}${TH("場面")}${TH("所蔵・出典")}${TH("権利")}${TH("申請")}${TH("確認")}${TH("採否")}</tr>`+
+    list.map(m=>`<tr style="border-top:1px solid var(--rule)">`+
+      TD(`${/^https:\/\//.test(m.url||"")?`<a href="${esc(m.url)}" target="_blank" rel="noopener"><b>${esc(m.title)}</b></a>`:`<b>${esc(m.title)}</b>`}${m.note?`<div class="note" style="white-space:pre-wrap">${esc(m.note)}</div>`:""}${m.basis?`<div class="note" style="white-space:pre-wrap">根拠：${esc(m.basis)}</div>`:""}`,";min-width:0")+
+      TD(esc(m.scene||""),";white-space:nowrap")+TD(esc(m.source||""))+
+      TD(`<span class="chip ${RIGHT_CLS(m.rights)}">${esc(m.rights||"")}</span>`)+
+      TD(sel("apply",m.id,APPLY,m.apply||"要確認"))+TD(sel("check",m.id,CHECK,m.check||"未着手"))+
+      TD(`<div style="display:grid;gap:6px">${pkgChk(m)}${sel("status",m.id,MSTATUS,m.status||"候補")}${st.assets&&m.status!=="使わない"?`<label class="note" style="cursor:pointer">${m.img?"画像を差し替える":"画像を貼る"}<input type="file" accept="image/png,image/jpeg,image/webp" data-mimg="${esc(m.id)}" style="font-size:11px"></label>`:""}</div>`)+
+      `</tr>`).join("")+`</table></div>`;
+  return h;
+}
+
+// ---------- V-02 シナリオ ----------
+function scCard(s,i){
+  const ed=st.editing["s:"+s.id];
+  const a=toSec(s.tcIn),b=toSec(s.tcOut); const len=(a!=null&&b!=null)?(b-a):null;
+  const n=jaLen(s.narrationJa); const need=n/READ_CPS; const over=len!=null&&need>len;
+  const meter=`<span class="meter${over?" over":""}">ナレーション ${n}字 ・ 読み上げ約${need.toFixed(1)}秒${len!=null?` ／ 尺 ${len}秒`:""}${over?" ・ 尺に収まりません":""}</span>`;
+  const tx=(v,cls="")=>v?`<div class="tx ${cls}">${esc(v)}</div>`:`<div class="tx blank">未作成</div>`;
+  let h=`<section class="sc" id="sn-${esc(s.id)}"><div class="hd"><span class="sw" style="background:${segColor(i)}"></span><span class="mono" style="font-size:13px">${esc(s.tcIn||"")}–${esc(s.tcOut||"")}</span><b>${esc(s.title||"")}</b><span class="note">${esc(s.era||"")}</span>${meter}</div>`;
+  if(s.line) h+=`<div class="note">一言：${esc(s.line)}</div>`;
+  if(ed){
+    h+=`<form class="edit" data-form="script" data-id="${esc(s.id)}"><div class="cols">
+      <label class="f c">ナレーション（日本語）<textarea id="s-ja-${esc(s.id)}" name="narrationJa" rows="5">${esc(s.narrationJa||"")}</textarea></label>
+      <label class="f c">英語字幕<textarea id="s-en-${esc(s.id)}" name="subtitleEn" rows="5">${esc(s.subtitleEn||"")}</textarea></label>
+      <label class="f c">画面の文字<textarea id="s-on-${esc(s.id)}" name="onscreen" rows="5">${esc(s.onscreen||"")}</textarea></label></div>
+      <div class="row"><button type="submit">保存</button><button type="button" class="ghost" data-act="cancel" data-key="s:${esc(s.id)}">閉じる</button></div></form>`;
+  } else {
+    h+=`<div class="cols"><div class="c"><h4>ナレーション（日本語）</h4>${tx(s.narrationJa)}</div><div class="c"><h4>英語字幕</h4>${tx(s.subtitleEn,"en")}</div><div class="c"><h4>画面の文字</h4>${tx(s.onscreen)}</div></div>
+      <div class="row"><button type="button" class="ghost small" data-act="edit" data-key="s:${esc(s.id)}"${dis()}>書き込む</button></div>`;
+  }
+  return h+`</section>`;
+}
+function pageScenario(){
+  const tot=st.scenes.reduce((a,s)=>a+jaLen(s.narrationJa),0);
+  let h=`<p class="note">ナレーション原稿・英語字幕・画面に出す文字。読み上げは1秒あたり約${READ_CPS}字で見積もり、尺を超えると赤で出ます。</p>
+    <div class="row" style="margin-bottom:12px"><span class="chip">ナレーション合計 ${tot}字</span><span class="chip">読み上げ約${fmt0(tot/READ_CPS)}</span><span class="chip">上限 ${fmt0(TOTAL)}</span></div>`;
+  if(!st.scenes.length) return h+loadingOr(`<div class="empty">場面がまだありません。<br>絵コンテと同じ場面ごとに、ナレーション原稿・英語字幕・画面の文字が並びます。<br>最初の一歩：絵コンテで場面を作ってください。</div>`);
+  return h+`<div class="script">${st.scenes.map(scCard).join("")}</div>`;
+}
+
+// ---------- V-03 ビューワー ----------
+function curCut(){ return st.cuts.find(c=>c.id===st.cutId)||null; }
+function curKey(){ if(st.localUrl) return "local"; const c=curCut(); return c?c.id:""; }
+function curLabel(){ if(st.localUrl) return "この端末の動画"; const c=curCut(); return c?(c.label||"版"):""; }
+// コメントの位置（アンカー）＝「版 @ 秒」。例 cut:abc123@83.4
+const anchorOf=(key,t)=>`cut:${key}@${(Math.round(t*10)/10).toFixed(1)}`;
+function parseAnchor(a){ const m=String(a||"").match(/^cut:([A-Za-z0-9_-]+)@(\d+(?:\.\d)?)$/); return m?{key:m[1],t:+m[2]}:null; }
+function pageViewer(){
+  const cut=curCut();
+  const src=st.localUrl||(cut&&cut.asset?"/_blob/"+cut.asset:"");
+  const sc=sceneAt(st.cur);
+  const screen=src?`<video id="vid" src="${esc(src)}" controls playsinline preload="metadata"></video>`:
+    `<div class="ph">動画がまだありません。<br>右の「版を追加」で書き出した動画を上げるか、「この端末の動画で見る」を使ってください。</div>`;
+  const label=st.localUrl?`この端末の動画：${esc(st.localName)}`:(cut?`${esc(cut.label||"")}`:"");
+  const mine=st.threads.map(x=>({x,p:parseAnchor(x.anchor)})).filter(o=>o.p&&o.p.key===curKey());
+  const canC=!!st.cm&&st.caState!=="off";
+  let h=`<p class="note">動画を止めて「この位置にコメント」を押すと、その時刻にコメントが付きます。コメントの印はタイムライン上に出ます。印を開くとその時刻へ飛びます。</p>
+  <div class="viewer"><div style="min-width:0">
+    <div class="screen">${screen}</div>
+    <div class="now"><span class="t" id="nowT">${fmt(st.cur)}</span><span class="chip" id="nowScene">${esc(sc?sc.era+"・"+(sc.title||""):"場面外")}</span><span class="note">${label}</span></div>
+    ${tcStrip({timeline:true})}
+    <div class="row" style="margin-top:12px">
+      <button type="button" id="commentHere"${(!src||!canC)?" disabled":""}>この位置にコメント</button>
+      <span class="note" id="cmNote">${!src?"先に動画を開いてください。":!st.cm?"この表示ではコメントを書けません（サインインと閲覧以上の権限が必要です）。":st.caState==="off"?"右上のコメントボタンから書き込めます。時刻も書き添えてください。":st.cmode?"コメントモード中：タイムラインを押すと、その時刻にコメントできます。":`この版のコメント ${mine.length}件${mine.length?`（未解決 ${mine.filter(o=>!o.x.resolved).length}）`:""}`}</span>
+    </div>
+  </div>
+  <div style="min-width:0;display:grid;gap:14px">
+    <div><h2 style="margin-top:0">版</h2>
+      ${st.cuts.length?`<div class="cutlist">${st.cuts.slice().reverse().map(c=>
+        `<div class="cut" aria-current="${!st.localUrl&&c.id===st.cutId}"><div><b>${esc(c.label||"")}</b><div class="note">${c.createdAt?esc(new Date(c.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})):""}${c.memo?" ・ "+esc(c.memo):""}</div></div><button type="button" class="ghost small" data-cut="${esc(c.id)}">開く</button></div>`).join("")}</div>`
+        :loadingOr(`<div class="empty">まだ版がありません。<br>編集ページで書き出した動画を、右の「版を追加」から上げてください。</div>`)}
+      ${st.assets?`<form id="cutForm" class="panel" style="margin-top:10px;display:grid;gap:8px" autocomplete="off">
+        <b style="font-size:14px">版を追加</b>
+        <label class="f">名前<input id="cutLabel" name="label" maxlength="60" placeholder="例：第1版 歴史パートのみ" required></label>
+        <label class="f">メモ<input id="cutMemo" name="memo" maxlength="120" placeholder="例：仮ナレーション"></label>
+        <label class="f">動画（MP4・WebM、20MB まで）<input id="cutFile" name="file" type="file" accept="video/mp4,video/webm" required></label>
+        <div class="note">20MB に収めるには 720p で書き出してください。3分なら目安は 720p・映像 0.8Mbps 程度です。</div>
+        <button type="submit">上げる</button></form>`:`<div class="note" style="margin-top:8px">動画を上げられるのは編集権限のある人だけです。</div>`}
+      <div class="panel" style="margin-top:10px;display:grid;gap:6px">
+        <b style="font-size:14px">この端末の動画で見る</b>
+        <div class="note">20MB を超える版は、手元のファイルをこの画面で開いて見られます。動画は送信されません。コメントは「この端末の動画」の印としてまとめて残ります。</div>
+        <input id="localFile" type="file" accept="video/*" aria-label="この端末の動画を選ぶ">
+      </div>
+    </div>
+  </div></div>`;
+  return h;
+}
+
+// ---------- コメント（claude.ai のコメント機能。印の位置だけこのページが決める） ----------
+function tlPoint(t){
+  const bar=$("#tl"); if(!bar) return null; const r=bar.getBoundingClientRect(); if(!r.width) return null;
+  return {x:r.left+window.scrollX+Math.min(1,Math.max(0,t/TOTAL))*r.width, y:r.top+window.scrollY+r.height/2};
+}
+function reportPlaced(){
+  if(!st.ca) return; const map={}; const key=curKey();
+  st.threads.forEach(x=>{ const p=parseAnchor(x.anchor); if(p&&p.key===key){ const pt=tlPoint(p.t); if(pt) map[x.id]=pt; } });
+  try{ st.ca.placed(map); }catch(_){}
+}
+async function syncAnchoring(){
+  const want=curPage==="viewer"&&!!st.cm;
+  if(want&&!st.ca&&st.caState!=="off"&&st.caState!=="pending"){
+    st.caState="pending";
+    try{
+      st.ca=await st.cm.customAnchors({
+        mode:on=>{ st.cmode=on; if(!on) st.threads=[]; refreshNote(); },
+        threads:list=>{ st.threads=list||[]; reportPlaced(); refreshNote(); },
+        reveal:id=>{ const x=st.threads.find(y=>y.id===id); const p=x&&parseAnchor(x.anchor); if(!p) return;
+          if(p.key!==curKey()){ if(p.key==="local"){ flash("このコメントは「この端末の動画」に付いています。同じ動画を開いてください。"); return; } st.cutId=p.key; if(st.localUrl){URL.revokeObjectURL(st.localUrl); st.localUrl="";} render.force=true; render(); }
+          seek(p.t); const bar=$("#tl"); if(bar) bar.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); }
+      });
+      st.caState="on"; if(curPage!=="viewer"){ st.ca.release(); st.ca=null; st.caState=""; } else reportPlaced();
+    }catch(e){ st.ca=null; st.caState="off"; }
+    refreshNote();
+  } else if(!want&&st.ca){ try{ st.ca.release(); }catch(_){} st.ca=null; st.caState=""; st.threads=[]; st.cmode=false; }
+}
+function refreshNote(){ if(curPage!=="viewer"||!$("#view .viewer")) return; updateViewerSide(); }
+async function composeAt(t){
+  const key=curKey(); if(!key) return;
+  const sc=sceneAt(t); const lbl=`${curLabel()} ${fmt(t)}${sc?" "+sc.era:""}`;
+  const v=$("#vid"); if(v) v.pause();
+  if(st.ca){
+    const pt=tlPoint(t)||$("#tl");
+    try{ await st.ca.compose(anchorOf(key,t),pt,{label:lbl}); }catch(e){ if(e&&e.code==="rate_limited") flash("少し待ってからもう一度押してください。"); }
+  } else if(st.cm){
+    try{ await st.cm.openComposer({element:$("#tl")||$("#view")}); flash(`時刻 ${fmt(t)} を書き添えてください。`); }catch(_){ flash("この表示ではコメントを書けません。"); }
+  }
+}
+function bindVideo(){
+  const v=$("#vid"); if(!v) return;
+  if(st.cur>0){ v.addEventListener("loadedmetadata",()=>{ try{ v.currentTime=Math.min(st.cur,v.duration||st.cur); }catch(_){} },{once:true}); }
+  v.addEventListener("timeupdate",()=>{ st.cur=v.currentTime;
+    const t=fmt(st.cur); const a=$("#nowT"); if(a) a.textContent=t;
+    const sc=sceneAt(st.cur); const c=$("#nowScene"); if(c) c.textContent=sc?sc.era+"・"+(sc.title||""):"場面外";
+    const ph=$("#playhead"); if(ph) ph.style.left=Math.min(100,st.cur/TOTAL*100)+"%"; });
+}
+function seek(t){ const v=$("#vid"); st.cur=+t; if(v){ try{ v.currentTime=+t; v.pause(); }catch(_){} } const a=$("#nowT"); if(a) a.textContent=fmt(st.cur); const ph=$("#playhead"); if(ph) ph.style.left=Math.min(100,st.cur/TOTAL*100)+"%"; }
+
+// ---------- V-05 編集（ムービーメーカー） ----------
+// 編集データは共有データ edits/main に1つだけ保存する。Claude は同じデータから高画質版を作れる。
+const ED={doc:null,remoteAt:"",dirty:false,saveT:0,sel:-1,playing:false,t:0,raf:0,t0:0,mounted:false,
+  imgs:{},monos:{},vids:{},auds:{},actx:null,rec:null,recBlob:null,recUrl:"",selA:-1,drag:null};
+const CW=1280,CH=720;
+const newId=()=>Math.random().toString(36).slice(2,9);
+function edDefault(){ return {title:"編集1",aspect:"scope",clips:[],audio:[]}; }
+function edDoc(){ if(!ED.doc) ED.doc=edDefault(); return ED.doc; }
+function edTotal(){ return edDoc().clips.reduce((a,c)=>a+Math.max(0.1,+c.dur||0),0); }
+function edStarts(){ let a=0; return edDoc().clips.map(c=>{const s=a; a+=Math.max(0.1,+c.dur||0); return s;}); }
+function edSave(){ ED.dirty=true; clearTimeout(ED.saveT); ED.saveT=setTimeout(async()=>{
+  const d=edDoc(); d.updatedAt=new Date().toISOString(); ED.remoteAt=d.updatedAt;
+  const ok=await write(()=>st.db.doc("edits/"+(ED.pid||"main")).set(JSON.parse(JSON.stringify(d))));
+  if(ok){ ED.dirty=false; const s=$("#edSaved"); if(s) s.textContent="保存しました"; } },700); }
+function edRemote(data){ // 共有データの更新を受け取る（自分が編集中のときは上書きしない）
+  if(ED.dirty||!data) return; if(data.updatedAt&&data.updatedAt===ED.remoteAt) return;
+  ED.doc=data; ED.remoteAt=data.updatedAt||""; if(curPage==="editor"&&ED.mounted){ edTimeline(); edInspector(); edDraw(ED.t); } }
+// --- 素材の読み込み（同じオリジンの /_blob なのでキャンバスは汚れない）
+function edImg(id){ if(!id) return null; if(ED.imgs[id]) return ED.imgs[id].complete&&ED.imgs[id].naturalWidth?ED.imgs[id]:null;
+  const im=new Image(); im.onload=()=>{ if(!ED.playing) edDraw(ED.t); }; im.src="/_blob/"+id; ED.imgs[id]=im; return null; }
+function edMono(id){ if(ED.monos[id]) return ED.monos[id]; const im=edImg(id); if(!im) return null;
+  const c=document.createElement("canvas"); const s=Math.min(1,1800/Math.max(im.naturalWidth,im.naturalHeight)); c.width=Math.round(im.naturalWidth*s); c.height=Math.round(im.naturalHeight*s);
+  const x=c.getContext("2d"); x.drawImage(im,0,0,c.width,c.height); const d=x.getImageData(0,0,c.width,c.height),p=d.data;
+  for(let i=0;i<p.length;i+=4){ const g=0.3*p[i]+0.59*p[i+1]+0.11*p[i+2]; p[i]=g*1.02+3; p[i+1]=g; p[i+2]=g*0.96; } x.putImageData(d,0,0); ED.monos[id]=c; return c; }
+function edVid(id){ if(ED.vids[id]) return ED.vids[id]; const v=document.createElement("video"); v.src="/_blob/"+id; v.muted=true; v.playsInline=true; v.preload="auto"; v.crossOrigin="anonymous"; ED.vids[id]=v; return v; }
+function edAud(a){ if(ED.auds[a.id]&&ED.auds[a.id].src.endsWith(a.asset)) return ED.auds[a.id]; const el=new Audio("/_blob/"+a.asset); el.preload="auto"; ED.auds[a.id]=el; return el; }
+// --- 1コマ描く
+const lerp=(a,b,u)=>a+(b-a)*u;
+const EASE={linear:u=>u,inout:u=>0.5-0.5*Math.cos(Math.PI*u),in:u=>u*u*u,out:u=>1-Math.pow(1-u,3)};
+const EASE_L=[["inout","ゆっくり動き出して、ゆっくり止まる"],["in","ゆっくり動き出して、勢いよく終わる"],["out","勢いよく動き出して、ゆっくり止まる"],["linear","一定の速さ"]];
+// カメラワークの名前 → 設定（静止画・動画に、寄り・移動・回転で近い動きをつける）
+const CAM=[
+ {k:"lock",n:"ロックオフ（固定）",d:"カメラを固定。動かさない",v:{z0:1,z1:1,x0:0,x1:0,y0:0,y1:0,rot0:0,rot1:0}},
+ {k:"est",n:"エスタブリッシングショット",d:"全景をゆっくり見せて場所を伝える",v:{z0:1,z1:1.06,x0:0,x1:0,y0:0,y1:0,rot0:0,rot1:0,ease:"inout"},dur:3},
+ {k:"dollyin",n:"ドリーイン（寄る）",d:"被写体に近づいていく",v:{z0:1,z1:1.25,x0:0,x1:0,y0:0,y1:0,rot0:0,rot1:0,ease:"inout"}},
+ {k:"dollyout",n:"ドリーアウト（引く）",d:"細部から全体へ引いていく",v:{z0:1.6,z1:1,x0:0,x1:0,y0:0,y1:0,rot0:0,rot1:0,ease:"out"}},
+ {k:"pedestal",n:"ペデスタル（上下に移動）",d:"カメラが上下に平行移動",v:{z0:1.3,z1:1.3,x0:0,x1:0,y0:-0.8,y1:0.8,rot0:0,rot1:0,ease:"inout"}},
+ {k:"truck",n:"トラック（左右に移動）",d:"カメラが左右に平行移動",v:{z0:1.3,z1:1.3,x0:-0.8,x1:0.8,y0:0,y1:0,rot0:0,rot1:0,ease:"inout"}},
+ {k:"barrel",n:"バレルロール（回転）",d:"画面が傾きながら回る",v:{z0:1.35,z1:1.35,x0:0,x1:0,y0:0,y1:0,rot0:-8,rot1:8,ease:"inout"}},
+ {k:"fly",n:"フライスルー（突き抜ける）",d:"一気に寄って奥へ抜ける",v:{z0:1,z1:2.6,x0:0,x1:0,y0:0,y1:0,rot0:0,rot1:0,ease:"in"},dur:1.2},
+ {k:"steadi",n:"ステディカム風（なめらかに漂う）",d:"少し寄りながら横へ流れる",v:{z0:1.15,z1:1.22,x0:-0.3,x1:0.3,y0:0.1,y1:-0.1,rot0:-0.6,rot1:0.6,ease:"inout"}},
+ {k:"follow",n:"フォローショット風（追いかける）",d:"横へ流れながら少し寄る",v:{z0:1.2,z1:1.35,x0:-0.6,x1:0.4,y0:0,y1:0,rot0:0,rot1:0,ease:"linear"}},
+ {k:"hyper",n:"ハイパーラプス（早回し）",d:"動画を4倍速にして、少しずつ寄る",v:{z0:1,z1:1.12,speed:4,ease:"linear"}},
+ {k:"long",n:"長回し（切らずに見せる）",d:"動かさず、そのまま長めに見せる",v:{z0:1,z1:1,x0:0,x1:0,y0:0,y1:0,rot0:0,rot1:0},dur:8},
+];
+const SHOOT_ONLY="ローアングル・バーズアイ・POV は撮影のときの角度です。撮る素材に指示として書いてください（絵コンテの「撮り方」）。";
+function edFrame(ctx,t){
+  const d=edDoc(), cl=d.clips, st0=edStarts();
+  ctx.fillStyle="#000"; ctx.fillRect(0,0,CW,CH);
+  const AH=d.aspect==="scope"?Math.round(CW/2.39):CH, TOPY=(CH-AH)/2;
+  let i=cl.findIndex((c,k)=>t>=st0[k]&&t<st0[k]+Math.max(0.1,+c.dur||0)); if(i<0) return;
+  const draw=(k,alpha)=>{ const c=cl[k]; const u=Math.min(1,Math.max(0,(t-st0[k])/Math.max(0.1,+c.dur||0)));
+    const ms=c.ms==null?0:+c.ms, me=c.me==null?1:+c.me; const um=(EASE[c.ease]||EASE.inout)(Math.min(1,Math.max(0,(u-ms)/Math.max(0.01,me-ms))));
+    ctx.save(); ctx.globalAlpha=alpha; ctx.beginPath(); ctx.rect(0,TOPY,CW,AH); ctx.clip();
+    if(c.kind==="text"){ ctx.fillStyle=c.bg==="white"?"#f4f4f2":c.bg==="blue"?"#1d3f6e":"#000"; ctx.fillRect(0,TOPY,CW,AH); }
+    else{ let src=null,sw=0,sh=0;
+      if(c.kind==="image"){ src=c.mono?edMono(c.img):edImg(c.img); if(src){ sw=src.naturalWidth||src.width; sh=src.naturalHeight||src.height; } }
+      else if(c.kind==="video"){ const v=edVid(c.asset); if(v.readyState>=2){ src=v; sw=v.videoWidth; sh=v.videoHeight; } }
+      if(src&&sw){ const z=lerp(+c.z0||1,+c.z1||1,um), px=lerp(+c.x0||0,+c.x1||0,um), py=lerp(+c.y0||0,+c.y1||0,um), rot=lerp(+c.rot0||0,+c.rot1||0,um)*Math.PI/180;
+        const sc=Math.max(CW/sw,AH/sh)*z, w=sw*sc, h=sh*sc; const ox=(CW-w)/2-px*(w-CW)/2, oy=TOPY+(AH-h)/2-py*(h-AH)/2;
+        if(rot){ ctx.translate(CW/2,TOPY+AH/2); ctx.rotate(rot); ctx.translate(-CW/2,-(TOPY+AH/2)); }
+        ctx.drawImage(src,ox,oy,w,h); }
+      else { ctx.fillStyle="#222"; ctx.fillRect(0,TOPY,CW,AH); ctx.fillStyle="#888"; ctx.font="24px sans-serif"; ctx.textAlign="center"; ctx.fillText("読み込み中…",CW/2,CH/2); } }
+    ctx.restore();
+    // 文字
+    let ja=c.textJa||""; if(c.kind==="text"&&c.typing){ const n=Math.floor(Math.min(1,u*1.6)*[...ja].length); ja=[...ja].slice(0,n).join("")+(u<0.75&&Math.floor(t*3)%2?"|":""); }
+    if(ja){ ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=c.kind==="text"&&c.bg==="white"?"#111":"#f2f2f2"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.font=(c.kind==="text"?"300 44px ":"300 34px ")+"'Zen Kaku Gothic New','Hiragino Sans',sans-serif";
+      if(c.kind!=="text"){ ctx.shadowColor="rgba(0,0,0,.6)"; ctx.shadowBlur=16; }
+      String(ja).split("\n").forEach((ln,k,arr)=>ctx.fillText(ln,CW/2,CH/2+(k-(arr.length-1)/2)*52)); ctx.restore(); }
+    if(c.textEn){ ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle="#cfcfcf"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="300 18px 'IBM Plex Mono',monospace";
+      ctx.fillText(c.textEn,CW/2,d.aspect==="scope"?TOPY+AH+(CH-AH)/4:CH-40); ctx.restore(); }
+  };
+  const c=cl[i]; const fadeIn=c.trans==="fade"&&i>0?Math.min(1,(t-st0[i])/0.4):1;
+  if(fadeIn<1){ draw(i-1,1); draw(i,fadeIn); } else draw(i,1);
+}
+function edDraw(t){ const cv=$("#edCanvas"); if(!cv) return; edFrame(cv.getContext("2d"),t); edPlayhead(t); }
+function edPlayhead(t){ const T=edTotal(); const a=$("#edTime"); if(a) a.textContent=fmt(t)+" / "+fmt(T);
+  const r=$("#edScrub"); if(r&&document.activeElement!==r){ r.max=String(T); r.value=String(t); }
+  const ph=$("#edPH"); if(ph) ph.style.left=(LBL+t*PX)+"px"; }
+// --- 再生
+function edSyncMedia(t,play){
+  const d=edDoc(), st0=edStarts();
+  d.clips.forEach((c,k)=>{ if(c.kind!=="video") return; const v=edVid(c.asset); const inT=t>=st0[k]&&t<st0[k]+c.dur;
+    const sp=+c.speed||1;
+    if(inT){ const want=(+c.in||0)+(t-st0[k])*sp; if(v.playbackRate!==sp) v.playbackRate=sp; if(Math.abs(v.currentTime-want)>0.25*sp) try{v.currentTime=want;}catch(_){} if(play&&v.paused) v.play().catch(()=>{}); if(!play) v.pause(); } else if(!v.paused) v.pause(); });
+  d.audio.forEach(a=>{ const el=edAud(a); el.volume=Math.max(0,Math.min(1,a.vol==null?0.8:+a.vol)); const at=t-(+a.start||0); const len=a.len?+a.len:(el.duration?el.duration-(+a.in||0):1e9);
+    if(at>=0&&at<len){ const want=(+a.in||0)+at; if(Math.abs(el.currentTime-want)>0.25) try{el.currentTime=want;}catch(_){} if(play&&el.paused) el.play().catch(()=>{}); if(!play) el.pause(); }
+    else if(!el.paused) el.pause(); });
+}
+function edPlay(fromT){ if(ED.playing) return; ED.playing=true; ED.t=fromT==null?ED.t:fromT; if(ED.t>=edTotal()) ED.t=0;
+  ED.t0=performance.now()-ED.t*1000; const b=$("#edPlayBtn"); if(b) b.textContent="一時停止";
+  const loop=()=>{ if(!ED.playing) return; ED.t=(performance.now()-ED.t0)/1000; const T=edTotal();
+    if(ED.t>=T){ edStop(true); if(ED.rec&&ED.rec.state==="recording") ED.rec.stop(); return; }
+    edSyncMedia(ED.t,true); edDraw(ED.t); ED.raf=requestAnimationFrame(loop); };
+  ED.raf=requestAnimationFrame(loop); }
+function edStop(keep){ ED.playing=false; cancelAnimationFrame(ED.raf); edSyncMedia(ED.t,false); if(!keep){} const b=$("#edPlayBtn"); if(b) b.textContent="再生"; edDraw(ED.t); }
+// --- 書き出し（実時間で録画。webm）
+async function edExport(){
+  if(ED.playing) edStop();
+  const cv=$("#edCanvas"); if(!cv||!cv.captureStream||!window.MediaRecorder){ setErr("この端末のブラウザでは書き出せません。パソコンの Chrome などでお試しください。"); return; }
+  try{ if(!ED.actx){ ED.actx=new (window.AudioContext||window.webkitAudioContext)(); ED.adst=ED.actx.createMediaStreamDestination(); ED.anodes={}; }
+    await ED.actx.resume();
+    edDoc().audio.forEach(a=>{ const el=edAud(a); if(!ED.anodes[a.id]){ try{ const n=ED.actx.createMediaElementSource(el); n.connect(ED.adst); n.connect(ED.actx.destination); ED.anodes[a.id]=n; }catch(_){} } });
+  }catch(_){}
+  const vs=cv.captureStream(30); const tracks=[...vs.getVideoTracks(),...(ED.adst?ED.adst.stream.getAudioTracks():[])];
+  const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm","video/mp4"].find(m=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))||"";
+  const chunks=[]; let rec; try{ rec=new MediaRecorder(new MediaStream(tracks),mime?{mimeType:mime,videoBitsPerSecond:4_000_000}:{}); }catch(e){ setErr("書き出しを始められませんでした。"); return; }
+  ED.rec=rec; rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{ const type=(rec.mimeType||"video/webm").split(";")[0]; ED.recBlob=new Blob(chunks,{type}); if(ED.recUrl) URL.revokeObjectURL(ED.recUrl); ED.recUrl=URL.createObjectURL(ED.recBlob); ED.rec=null; edOut(); };
+  $("#edOut").innerHTML=`<div class="note">書き出し中です（${fmt0(edTotal())}かかります）。画面を切り替えずにお待ちください。</div>`;
+  rec.start(500); edPlay(0);
+}
+function edOut(){ const box=$("#edOut"); if(!box) return; if(!ED.recBlob){ box.innerHTML=""; return; }
+  const mb=(ED.recBlob.size/1048576).toFixed(1);
+  box.innerHTML=`<div class="panel" style="display:grid;gap:8px"><b>書き出しました（${mb}MB）</b><video src="${ED.recUrl}" controls playsinline style="width:100%;max-width:560px;background:#000;border-radius:6px"></video>
+    <div class="row">${st.assets?`<button type="button" data-ed="tocut"${ED.recBlob.size>20*1048576?" disabled":""}>ビューワーに版として追加</button>`:""}<button type="button" class="ghost" data-ed="dl">この端末に保存</button>
+    ${ED.recBlob.size>20*1048576?`<span class="note">20MB を超えたため、ビューワーには追加できません。</span>`:""}</div></div>`; }
+// --- 画面
+let PX=40; // タイムラインの1秒あたりの幅
+function pageEditor(){
+  const d=edDoc();
+  return `<p class="note">素材集めの写真やビューワーの動画を並べて、1本の動画にします。編集の中身は自動で保存され、同じ内容から Claude が高画質版も作れます。</p>
+  <div class="row" id="edProj" style="margin-bottom:10px"></div>
+  <div class="ed">
+    <div class="edLeft" style="min-width:0">
+      <div class="edStage"><canvas id="edCanvas" width="${CW}" height="${CH}"></canvas></div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" id="edPlayBtn" data-ed="play">再生</button><button type="button" class="ghost" data-ed="stop">最初へ</button>
+        <span class="mono" id="edTime">0:00.0</span>
+        <input type="range" id="edScrub" min="0" step="0.04" value="0" style="flex:1;min-width:140px" aria-label="再生位置">
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label class="note" for="edAspect">画面</label><select id="edAspect" style="width:auto"><option value="scope"${d.aspect==="scope"?" selected":""}>映画風の横長（上下に黒帯）</option><option value="169"${d.aspect==="169"?" selected":""}>16:9</option></select>
+        <button type="button" data-ed="export"${canWrite()?"":" "}>動画に書き出す</button><span class="note" id="edSaved"></span>
+      </div>
+      <div id="edOut" style="margin-top:10px"></div>
+    </div>
+    <div style="min-width:0;display:grid;gap:14px;align-content:start">
+      ${pkgPanel("editor")}
+      <div class="panel" id="edInsp"></div>
+      <div class="panel"><b>ほかの素材を足す</b>
+        <div class="row" style="margin:8px 0"><button type="button" class="ghost small" data-ed="addtext">文字カード</button></div>
+        <div class="note" style="margin:10px 0 6px">動画（ビューワーの版）</div>
+        <div id="edLibVid" style="display:grid;gap:6px"></div>
+        <details style="margin-top:10px"><summary class="note" style="cursor:pointer">パッケージに入っていない写真から足す</summary><div class="edLib" id="edLibImg" style="margin-top:6px"></div></details>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:18px;justify-content:space-between"><h2 style="margin:0">タイムライン <span class="note" id="edCount"></span></h2>
+    <div class="row"><button type="button" class="ghost small" data-ed="zout" aria-label="縮小">－</button><span class="note mono" id="edZoomV">${Math.round(PX)}px/秒</span><button type="button" class="ghost small" data-ed="zin" aria-label="拡大">＋</button></div></div>
+  <div class="note">帯を横に動かすと位置（映像は並べ替え）、右端をつまむと長さ、左端をつまむと頭を切れます。帯を押すと上に詳細が出ます。時間の目盛りを押すとその位置へ移動。</div>
+  <div class="tlWrap" id="edTL"></div>
+  <div class="grid2" style="margin-top:14px"><div><h2 style="margin-top:0">作業の記録</h2><div id="edLog"></div></div><div>${agentPanel()}</div></div>`;
+}
+function edLibrary(){
+  const li=$("#edLibImg"); if(li){ const pics=st.materials.filter(m=>m.img&&!pkgIn(m.id));
+    li.innerHTML=pics.length?pics.map(m=>`<button type="button" class="edThumb" data-addimg="${esc(m.img)}" data-title="${esc(m.title)}" title="${esc(m.title)}"><img src="/_blob/${esc(m.img)}" alt="" loading="lazy"><span>${esc(m.title)}</span></button>`).join(""):`<div class="note">ほかに画像のある素材はありません。</div>`; }
+  const lv=$("#edLibVid"); if(lv){ lv.innerHTML=st.cuts.length?st.cuts.slice().reverse().map(c=>`<button type="button" class="ghost small" style="text-align:left" data-addvid="${esc(c.asset||"")}" data-title="${esc(c.label||"")}">＋ ${esc(c.label||"")}</button>`).join(""):`<div class="note">版がまだありません。</div>`; }
+}
+// --- 多段タイムライン（映像／文字・字幕／ナレーション／BGM／効果音）。指・Apple Pencil・マウスで操作
+const LBL=96;
+const TRACKS=[["video","映像"],["text","文字・字幕"],["narr","ナレーション"],["bgm","BGM"],["sfx","効果音"]];
+const AUD_TRACKS=["narr","bgm","sfx"];
+function audTrack(a){ if(a.track) return a.track; const n=String(a.name||""); return /ナレーション|narr|声/i.test(n)?"narr":/BGM|音楽|曲/i.test(n)?"bgm":"sfx"; }
+function audLen(a){ if(+a.len>0) return +a.len; const el=ED.auds[a.id]; if(el&&el.duration&&isFinite(el.duration)) return Math.max(0.1,el.duration-(+a.in||0));
+  const el2=edAud(a); if(!el2._lm){ el2._lm=1; el2.addEventListener("loadedmetadata",()=>{ if(curPage==="editor"&&ED.mounted&&!ED.drag) edTimeline(); }); } return Math.max(1,edTotal()-(+a.start||0)); }
+function edTimeline(){
+  const d=edDoc(), box=$("#edTL"); if(!box) return; const st0=edStarts(), T=Math.max(edTotal(),...d.audio.map(a=>(+a.start||0)+audLen(a)),5);
+  const cnt=$("#edCount"); if(cnt) cnt.textContent=`${d.clips.length}カット・音 ${d.audio.length}・${fmt0(edTotal())}`;
+  const W=Math.ceil(T*PX)+60; const step=PX>=80?1:PX>=30?5:10; let ticks="";
+  for(let s=0;s<=T+0.01;s+=step) ticks+=`<span style="left:${s*PX}px">${fmt0(s)}</span>`;
+  const bar=(cls,attrs,left,width,inner,sel)=>`<div class="tlBar ${cls}${sel?" sel":""}" ${attrs} style="left:${left}px;width:${Math.max(6,width)}px">
+    <span class="tlH l" data-h="l"></span>${inner}<span class="tlH r" data-h="r"></span></div>`;
+  const lane={video:"",text:"",narr:"",bgm:"",sfx:""};
+  d.clips.forEach((c,k)=>{ const w=c.dur*PX-2;
+    lane.video+=bar("v"+(c.kind==="text"?" txt":""),`data-clip="${k}"`,st0[k]*PX,w,
+      `${c.kind==="image"&&c.img?`<img src="/_blob/${esc(c.img)}" alt="" loading="lazy" draggable="false"${c.mono?' style="filter:grayscale(1)"':""}>`:""}<span class="tlT">${c.kind==="text"?"文字："+esc(c.textJa||""):c.kind==="video"?"動画："+esc(c.title||""):esc(c.title||"")}</span>`,k===ED.sel&&ED.selA<0);
+    if(c.textJa||c.textEn) lane.text+=bar("t",`data-clip="${k}" data-nodrag="1"`,st0[k]*PX,w,`<span class="tlT">${esc((c.textJa||"").replace(/\n/g," "))}${c.textEn?" ／ "+esc(c.textEn):""}</span>`,k===ED.sel&&ED.selA<0); });
+  // 同じ段で重なる音は、段の中で上下に振り分ける
+  const slots={}, nSlot={narr:1,bgm:1,sfx:1};
+  AUD_TRACKS.forEach(tr=>{ const ends=[]; d.audio.map((a,k)=>({a,k})).filter(o=>audTrack(o.a)===tr).sort((x,y)=>(+x.a.start||0)-(+y.a.start||0)).forEach(o=>{
+    const s0=+o.a.start||0; let i=ends.findIndex(e=>e<=s0+0.001); if(i<0){ i=ends.length; ends.push(0); } ends[i]=s0+audLen(o.a); slots[o.k]=i; }); nSlot[tr]=Math.max(1,ends.length); });
+  d.audio.forEach((a,k)=>{ const tr=audTrack(a); const n=nSlot[tr], sl=slots[k]||0; const hh=n>1?28:44;
+    lane[tr]+=bar("a "+tr,`data-aud="${k}"`,(+a.start||0)*PX,audLen(a)*PX-2,`<span class="tlT">♪ ${esc(a.name||"音")}</span><span class="tlVol" style="height:${Math.round((a.vol==null?0.8:+a.vol)*100)}%"></span>`,k===ED.selA).replace('style="left:',`style="top:${6+sl*(hh+4)}px;bottom:auto;height:${hh}px;left:`); });
+  ED._laneH=nSlot;
+  const add=tr=>st.assets?`<label class="tlAdd" title="音のファイルを足す">＋<input type="file" data-audtrack="${tr}" accept=".m4a,audio/mp4,audio/x-m4a,video/mp4,video/webm,audio/webm" hidden></label>`:"";
+  box.innerHTML=`<div class="tlInner" style="width:${W+LBL}px">
+    <div class="tlRow tlRulerRow"><div class="tlLbl"><span class="note">時間</span></div><div class="tlLane tlRuler" data-ruler="1" style="width:${W}px">${ticks}</div></div>
+    ${TRACKS.map(([k,n])=>`<div class="tlRow" data-track="${k}"><div class="tlLbl">${n}${AUD_TRACKS.includes(k)?add(k):""}</div><div class="tlLane" style="width:${W}px${AUD_TRACKS.includes(k)&&nSlot[k]>1?`;height:${12+nSlot[k]*32}px`:""}">${lane[k]||(AUD_TRACKS.includes(k)?`<span class="tlEmpty">${st.assets?"左の＋から音を足す":"音はまだありません"}</span>`:"")}</div></div>`).join("")}
+    <div class="tlPH" id="edPH" style="left:${LBL+ED.t*PX}px"></div></div>`;
+}
+// ドラッグ（位置・長さ）とタップ（選択）
+let PXmin=8,PXmax=240;
+function tlZoom(f){ const box=$("#edTL"); const center=box?(box.scrollLeft+box.clientWidth/2-LBL)/PX:ED.t; PX=Math.max(PXmin,Math.min(PXmax,PX*f)); edTimeline(); if(box) box.scrollLeft=center*PX+LBL-box.clientWidth/2; const z=$("#edZoomV"); if(z) z.textContent=Math.round(PX)+"px/秒"; }
+document.addEventListener("pointerdown",e=>{
+  if(curPage!=="editor") return; const box=$("#edTL"); if(!box||!box.contains(e.target)) return;
+  const ruler=e.target.closest("[data-ruler]"); if(ruler){ const r=ruler.getBoundingClientRect(); ED.t=Math.max(0,(e.clientX-r.left)/PX); if(ED.playing) edStop(); edSyncMedia(ED.t,false); edDraw(ED.t); ED.drag={kind:"seek",lane:r}; ruler.setPointerCapture(e.pointerId); e.preventDefault(); return; }
+  const el=e.target.closest(".tlBar"); if(!el) return;
+  const h=e.target.dataset.h||"m"; const isA=el.dataset.aud!=null; const idx=+(isA?el.dataset.aud:el.dataset.clip);
+  const d=edDoc(); const o=isA?JSON.parse(JSON.stringify(d.audio[idx])):JSON.parse(JSON.stringify(d.clips[idx]));
+  ED.drag={kind:isA?"aud":"clip",idx,h,x0:e.clientX,o,el,moved:false,nodrag:!!el.dataset.nodrag||!canWrite()};
+  el.setPointerCapture(e.pointerId); e.preventDefault();
+});
+document.addEventListener("pointermove",e=>{
+  const g=ED.drag; if(!g) return;
+  if(g.kind==="seek"){ ED.t=Math.max(0,(e.clientX-g.lane.left)/PX); edSyncMedia(ED.t,false); edDraw(ED.t); return; }
+  const dx=e.clientX-g.x0; if(!g.moved&&Math.abs(dx)<5) return; g.moved=true; if(g.nodrag) return;
+  const ds=dx/PX, d=edDoc(), snap=v=>Math.round(v*20)/20;
+  if(g.kind==="aud"){ const a=d.audio[g.idx]; const L0=audLen(g.o);
+    if(g.h==="m"){ a.start=Math.max(0,snap((+g.o.start||0)+ds)); g.el.style.left=(a.start*PX)+"px"; }
+    else if(g.h==="r"){ a.len=Math.max(0.2,snap(L0+ds)); g.el.style.width=(a.len*PX-2)+"px"; }
+    else { const dd=Math.max(-(+g.o.in||0),Math.min(L0-0.2,ds)); a.start=snap((+g.o.start||0)+dd); a.in=snap((+g.o.in||0)+dd); a.len=snap(L0-dd); g.el.style.left=(a.start*PX)+"px"; g.el.style.width=(a.len*PX-2)+"px"; }
+  } else { const c=d.clips[g.idx]; const sp=+c.speed||1;
+    if(g.h==="r"){ c.dur=Math.max(0.1,snap(g.o.dur+ds)); g.el.style.width=(c.dur*PX-2)+"px"; }
+    else if(g.h==="l"&&c.kind==="video"){ const dd=Math.max(-(+g.o.in||0)/sp,Math.min(g.o.dur-0.1,ds)); c.in=snap((+g.o.in||0)+dd*sp); c.dur=snap(g.o.dur-dd); g.el.style.width=(c.dur*PX-2)+"px"; }
+    else if(g.h==="m"){ // 横に動かして並べ替え：中心が隣のカットを越えたら入れ替え
+      g.el.style.transform=`translateX(${dx}px)`; g.el.style.zIndex=5; }
+  }
+});
+document.addEventListener("pointerup",e=>{
+  const g=ED.drag; if(!g) return; ED.drag=null;
+  if(g.kind==="seek") return;
+  if(!g.moved){ // タップ＝選択
+    if(g.kind==="aud"){ ED.selA=g.idx; ED.sel=-1; } else { ED.selA=-1; ED.sel=g.idx; ED.t=edStarts()[g.idx]+0.01; if(ED.playing) edStop(); edDraw(ED.t); }
+    edTimeline(); edInspector(); return; }
+  if(g.nodrag) return;
+  if(g.kind==="clip"&&g.h==="m"){ const d=edDoc(); const st0=edStarts(); const c=d.clips[g.idx]; const center=st0[g.idx]+c.dur/2+(e.clientX-g.x0)/PX;
+    let to=st0.findIndex((s,k)=>center<s+d.clips[k].dur); if(to<0) to=d.clips.length-1;
+    if(to!==g.idx){ d.clips.splice(g.idx,1); d.clips.splice(to,0,c); ED.sel=to; ED.selA=-1; } }
+  edSave(); edTimeline(); edInspector(); edDraw(ED.t);
+});
+document.addEventListener("pointercancel",()=>{ if(ED.drag){ ED.drag=null; edTimeline(); } });
+function audInspector(box){ const d=edDoc(); const a=d.audio[ED.selA]; if(!a){ ED.selA=-1; return false; }
+  const dis_=canWrite()?"":" disabled";
+  box.innerHTML=`<div class="row" style="justify-content:space-between"><b>音：${esc(a.name||"音")}</b></div>
+  <div class="edGrid">
+    <label class="f">段<select data-af="track"${dis_}>${AUD_TRACKS.map(k=>`<option value="${k}"${audTrack(a)===k?" selected":""}>${TRACKS.find(x=>x[0]===k)[1]}</option>`).join("")}</select></label>
+    <label class="f">音量<input type="range" min="0" max="1" step="0.05" value="${a.vol==null?0.8:a.vol}" data-af="vol"${dis_}></label>
+    <label class="f">置く位置（秒）<input type="number" step="0.05" min="0" value="${+a.start||0}" data-af="start"${dis_}></label>
+    <label class="f">長さ（秒・0＝最後まで）<input type="number" step="0.05" min="0" value="${+a.len||0}" data-af="len"${dis_}></label>
+    <label class="f">トリミング：開始（秒）<input type="number" step="0.05" min="0" value="${+a.in||0}" data-af="in"${dis_}></label>
+  </div>
+  <div class="note" style="margin-top:6px">タイムラインの帯を横に動かすと位置、右端をつまむと長さ、左端をつまむと頭を切れます。</div>
+  <div class="row" style="margin-top:8px"><button type="button" class="danger small" data-auddel="${ED.selA}"${dis_}>外す</button></div>`; return true; }
+
+function num(id,label,val,step,min,max){ return `<label class="f">${label}<input type="number" id="${id}" data-f="${id.slice(2)}" value="${val}" step="${step}" min="${min}" max="${max}"></label>`; }
+function edInspector(){
+  const box=$("#edInsp"); if(!box) return; if(ED.selA>=0&&audInspector(box)) return; const d=edDoc(); const c=d.clips[ED.sel];
+  if(!c){ box.innerHTML=`<b>カットの設定</b><div class="note" style="margin-top:6px">タイムラインのカットを押すと、ここで長さ・寄り・文字などを変えられます。</div>`; return; }
+  const dis_=canWrite()?"":" disabled";
+  const cams=CAM.filter(x=>c.kind==="video"||x.k!=="hyper");
+  box.innerHTML=`<div class="row" style="justify-content:space-between"><b>カット ${ED.sel+1}：${c.kind==="text"?"文字カード":c.kind==="video"?"動画":"写真"}</b><span class="note">${esc(c.title||"")}</span></div>
+  ${c.kind!=="text"?`<label class="f" style="margin-top:8px">カメラワーク<select id="edCam"${dis_}><option value="">選ぶと動きが入ります</option>${cams.map(x=>`<option value="${x.k}"${c.cam===x.k?" selected":""}>${x.n}</option>`).join("")}</select></label>
+  <div class="note" id="edCamNote">${esc((CAM.find(x=>x.k===c.cam)||{}).d||SHOOT_ONLY)}</div>
+  <div class="edGrid">
+    <label class="f">動きの始め（カットの何%から）<input type="range" id="f_ms" data-f="ms" min="0" max="0.95" step="0.05" value="${c.ms??0}"></label>
+    <label class="f">動きの終わり（何%まで）<input type="range" id="f_me" data-f="me" min="0.05" max="1" step="0.05" value="${c.me??1}"></label>
+  </div>
+  <label class="f">動き方<select id="f_ease" data-f="ease">${EASE_L.map(([v,l])=>`<option value="${v}"${(c.ease||"inout")===v?" selected":""}>${l}</option>`).join("")}</select></label>`:""}
+  <div class="edGrid">
+    ${num("f_dur","長さ（秒）",c.dur,0.05,0.1,60)}
+    ${c.kind==="video"?num("f_speed","速さ（1＝等倍）",c.speed||1,0.25,0.25,8):""}
+    ${c.kind==="video"?num("f_in","トリミング：開始（秒）",c.in||0,0.1,0,3600):""}
+    ${c.kind==="video"?`<label class="f">トリミング：終了（秒）<input type="number" id="f_out" value="${((+c.in||0)+c.dur*(+c.speed||1)).toFixed(2)}" step="0.1" min="0"></label>`:""}
+    ${c.kind!=="text"?`${num("f_z0","寄り：始め（1＝全体）",c.z0??1,0.05,1,4)}${num("f_z1","寄り：終わり",c.z1??1,0.05,1,4)}
+    ${num("f_x0","横位置：始め（-1〜1）",c.x0??0,0.1,-1,1)}${num("f_x1","横位置：終わり",c.x1??0,0.1,-1,1)}
+    ${num("f_y0","縦位置：始め（-1〜1）",c.y0??0,0.1,-1,1)}${num("f_y1","縦位置：終わり",c.y1??0,0.1,-1,1)}
+    ${num("f_rot0","回転：始め（度）",c.rot0??0,1,-45,45)}${num("f_rot1","回転：終わり（度）",c.rot1??0,1,-45,45)}`:""}
+  </div>
+  ${c.kind==="video"?`<div class="row" style="margin-top:8px"><button type="button" class="ghost small" data-ed="trimin"${dis_}>今の位置を開始に</button><button type="button" class="ghost small" data-ed="trimout"${dis_}>今の位置を終了に</button><button type="button" class="small" data-ed="split"${dis_}>音を分ける（音トラックへ）</button></div>
+  <div class="note">動画の音はそのままでは鳴りません。「音を分ける」で音トラックに切り出すと、開始位置・長さ・音量を別に調整できます。</div>`:""}
+  ${c.kind==="image"?`<label class="row note" style="margin-top:6px"><input type="checkbox" id="f_mono" data-f="mono" style="width:auto"${c.mono?" checked":""}> 白黒にする</label>`:""}
+  ${c.kind==="text"?`<div class="row" style="margin-top:6px"><label class="note" for="f_bg">背景</label><select id="f_bg" data-f="bg" style="width:auto">${[["black","黒"],["white","白"],["blue","青焼きの青"]].map(([v,l])=>`<option value="${v}"${(c.bg||"black")===v?" selected":""}>${l}</option>`).join("")}</select>
+    <label class="note"><input type="checkbox" id="f_typing" data-f="typing" style="width:auto"${c.typing?" checked":""}> タイプライターのように1文字ずつ出す</label></div>`:""}
+  <label class="f" style="margin-top:8px">画面の文字（日本語。改行できます）<textarea id="f_textJa" data-f="textJa" rows="2">${esc(c.textJa||"")}</textarea></label>
+  <label class="f">英語字幕<input id="f_textEn" data-f="textEn" value="${esc(c.textEn||"")}"></label>
+  <div class="row" style="margin-top:6px"><label class="note" for="f_trans">前のカットからのつなぎ</label><select id="f_trans" data-f="trans" style="width:auto"><option value="cut"${c.trans!=="fade"?" selected":""}>パッと切り替え</option><option value="fade"${c.trans==="fade"?" selected":""}>ふわっと重ねる</option></select></div>
+  <div class="row" style="margin-top:10px"><button type="button" class="ghost small" data-ed="left"${dis_}>← 前へ</button><button type="button" class="ghost small" data-ed="right"${dis_}>後ろへ →</button><button type="button" class="ghost small" data-ed="dup"${dis_}>複製</button><button type="button" class="danger small" data-ed="del"${dis_}>削除</button></div>`;
+}
+function edAudioUI(){
+  const box=$("#edAudio"); if(!box) return; const d=edDoc();
+  box.innerHTML=(d.audio.length?`<div style="display:grid;gap:6px">`+d.audio.map((a,k)=>`<div class="cut"><b style="font-size:13.5px">${esc(a.name||"音")}</b>
+    <div class="row"><label class="note">置く位置（秒）<input type="number" step="0.1" min="0" value="${+a.start||0}" data-aud="${k}" data-af="start" style="width:80px"></label>
+    <label class="note">トリミング：開始<input type="number" step="0.1" min="0" value="${+a.in||0}" data-aud="${k}" data-af="in" style="width:80px"></label>
+    <label class="note">長さ（0＝最後まで）<input type="number" step="0.1" min="0" value="${+a.len||0}" data-aud="${k}" data-af="len" style="width:80px"></label>
+    <label class="note">音量<input type="range" min="0" max="1" step="0.05" value="${a.vol==null?0.8:a.vol}" data-aud="${k}" data-af="vol" style="width:120px"></label>
+    <button type="button" class="danger small" data-auddel="${k}">外す</button></div></div>`).join("")+`</div>`:`<div class="note">音はまだありません。</div>`)+
+    (st.assets?`<label class="f" style="margin-top:8px">音を足す（m4a・mp4・webm、20MB まで。iPhone のボイスメモの m4a も使えます）<input type="file" id="edAudFile" accept=".m4a,audio/mp4,audio/x-m4a,video/mp4,video/webm,audio/webm"></label>`:`<div class="note" style="margin-top:6px">音を足せるのは編集権限のある人だけです。</div>`);
+}
+function edMount(){ ED.mounted=true; pkgRefresh(); edProjUI(); edLog(); edLibrary(); edTimeline(); edInspector(); edAudioUI(); edOut(); edDraw(ED.t); }
+function edRefresh(){ pkgRefresh(); edLog(); edLibrary(); if(!ED.dirty){ edTimeline(); } edAudioUI(); }
+function edChange(fn,redrawTL=true){ if(!canWrite()){ setErr("この表示では編集できません。"); return; } fn(edDoc()); edSave(); if(redrawTL) edTimeline(); edDraw(ED.t); }
+function edAddClip(c){ edChange(d=>{ const at=ED.sel>=0?ED.sel+1:d.clips.length; d.clips.splice(at,0,c); ED.sel=at; }); edInspector(); }
+document.addEventListener("click",e=>{
+  if(curPage!=="editor") return; const t=e.target.closest("button"); if(!t) return;
+  if(t.dataset.addimg){ edAddClip({id:newId(),kind:"image",img:t.dataset.addimg,title:t.dataset.title,dur:1.0,z0:1.05,z1:1.0,x0:0,x1:0,y0:0,y1:0,mono:false,trans:"cut"}); return; }
+  if(t.dataset.addvid){ if(!t.dataset.addvid) return; edAddClip({id:newId(),kind:"video",asset:t.dataset.addvid,title:t.dataset.title,dur:5,in:0,z0:1,z1:1,trans:"cut"}); return; }
+  if(t.dataset.clip!=null){ ED.sel=+t.dataset.clip; const s=edStarts()[ED.sel]; ED.t=s+0.01; if(ED.playing) edStop(); edTimeline(); edInspector(); edDraw(ED.t); return; }
+  if(t.dataset.auddel!=null){ const k=+t.dataset.auddel; edChange(d=>{ d.audio.splice(k,1); }); ED.selA=-1; edInspector(); return; }
+  if(t.dataset.ed==="zin"){ tlZoom(1.5); return; } if(t.dataset.ed==="zout"){ tlZoom(1/1.5); return; }
+  const a=t.dataset.ed; if(!a) return;
+  if(a==="play"){ if(ED.playing) edStop(); else edPlay(); return; }
+  if(a==="stop"){ edStop(); ED.t=0; edDraw(0); return; }
+  if(a==="newproj"){ try{ MM.newProject({}); flash("新しい編集を作りました"); }catch(e){ setErr(e.message); } return; }
+  if(a==="agentrun"){ (async()=>{ const o=$("#agentOut"); o.textContent="実行中…"; o.textContent=await agentRun($("#agentCmd").value); })(); return; }
+  if(a==="addtext"){ edAddClip({id:newId(),kind:"text",textJa:"文字",textEn:"",bg:"black",typing:true,dur:2.5,trans:"cut"}); return; }
+  if(a==="export"){ edExport(); return; }
+  if(a==="dl"){ (async()=>{ const dl=await window.claude.use("downloads"); if(!dl){ setErr("この表示では保存できません。"); return; }
+      try{ await dl.save({filename:`movie_${new Date().toISOString().slice(0,16).replace(/[-:T]/g,"")}.${ED.recBlob.type.includes("mp4")?"mp4":"webm"}`,data:ED.recBlob}); flash("保存しました"); }catch(err){ if(err&&err.code!=="declined") setErr("保存できませんでした（"+(err&&err.code||"")+"）。"); } })(); return; }
+  if(a==="tocut"){ (async()=>{ if(!st.assets||!ED.recBlob) return; t.disabled=true; t.textContent="追加しています…";
+      try{ const r=await st.assets.upload(ED.recBlob,{type:ED.recBlob.type.includes("mp4")?"video/mp4":"video/webm"});
+        const ok=await write(()=>st.db.collection("cuts").add({label:`編集から書き出し ${new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}`,memo:`編集ページで ${edDoc().clips.length}カット・${fmt0(edTotal())}`,asset:r.id,createdAt:new Date().toISOString(),by:st.me||""}));
+        if(ok){ t.textContent="追加しました"; flash("ビューワーに追加しました"); } }
+      catch(err){ t.disabled=false; t.textContent="ビューワーに版として追加"; setErr(err&&err.code==="too_large"?"20MB を超えています。":"追加できませんでした。"); } })(); return; }
+  const k=ED.sel; if(k<0) return;
+  if(a==="trimin"||a==="trimout"){ const c=edDoc().clips[k]; const s0=edStarts()[k]; const sp=+c.speed||1; const src=(+c.in||0)+Math.max(0,Math.min(c.dur,ED.t-s0))*sp;
+    edChange(d=>{ const cc=d.clips[k]; const out=(+cc.in||0)+cc.dur*sp; if(a==="trimin"){ cc.in=+src.toFixed(2); cc.dur=Math.max(0.1,(out-cc.in)/sp); } else { cc.dur=Math.max(0.1,(src-(+cc.in||0))/sp); } }); edInspector(); return; }
+  if(a==="split"){ const c=edDoc().clips[k]; const s0=edStarts()[k];
+    edChange(d=>{ d.audio.push({id:newId(),asset:c.asset,name:"「"+(c.title||"動画")+"」の音",start:+s0.toFixed(2),in:+(+c.in||0).toFixed(2),len:+(c.dur*(+c.speed||1)).toFixed(2),vol:0.9}); },false); edAudioUI(); flash("音トラックに分けました"); return; }
+  if(a==="left"&&k>0){ edChange(d=>{ const [c]=d.clips.splice(k,1); d.clips.splice(k-1,0,c); ED.sel=k-1; }); edInspector(); }
+  if(a==="right"&&k<edDoc().clips.length-1){ edChange(d=>{ const [c]=d.clips.splice(k,1); d.clips.splice(k+1,0,c); ED.sel=k+1; }); edInspector(); }
+  if(a==="dup"){ edChange(d=>{ const c=JSON.parse(JSON.stringify(d.clips[k])); c.id=newId(); d.clips.splice(k+1,0,c); ED.sel=k+1; }); edInspector(); }
+  if(a==="del"){ if(t.dataset.confirm!=="1"){ t.dataset.confirm="1"; t.textContent="本当に削除"; setTimeout(()=>{ if(t.isConnected){ t.dataset.confirm=""; t.textContent="削除"; } },3000); return; }
+    edChange(d=>{ d.clips.splice(k,1); ED.sel=Math.min(k,d.clips.length-1); }); edInspector(); }
+});
+document.addEventListener("input",e=>{
+  if(curPage!=="editor") return; const t=e.target;
+  if(t.id==="edScrub"){ if(ED.playing) edStop(); ED.t=+t.value; const st0=edStarts(); const k=edDoc().clips.findIndex((c,i)=>ED.t>=st0[i]&&ED.t<st0[i]+c.dur); edSyncMedia(ED.t,false); edDraw(ED.t); return; }
+  if(t.id==="f_out"&&ED.sel>=0){ const c=edDoc().clips[ED.sel]; const sp=+c.speed||1; edChange(d=>{ d.clips[ED.sel].dur=Math.max(0.1,((+t.value)-(+c.in||0))/sp); }); return; }
+  if(t.id==="edCam"&&ED.sel>=0){ const p=CAM.find(x=>x.k===t.value); if(!p) return; edChange(d=>{ const c=d.clips[ED.sel]; Object.assign(c,p.v); c.cam=p.k; c.ms=0; c.me=1; if(p.dur) c.dur=p.dur; }); edInspector(); return; }
+  if(t.dataset.f&&ED.sel>=0){ const f=t.dataset.f; let v=t.type==="checkbox"?t.checked:t.value; if(t.type==="number"||t.type==="range") v=+v; if(f==="dur") v=Math.max(0.1,v||0.1);
+    edChange(d=>{ d.clips[ED.sel][f]=v; }, f==="dur"||f==="mono"||f==="textJa"); return; }
+  if(t.dataset.af&&ED.selA>=0){ const f=t.dataset.af; edChange(d=>{ d.audio[ED.selA][f]=f==="track"?t.value:+t.value; }); return; }
+});
+document.addEventListener("change",async e=>{
+  if(curPage!=="editor") return; const t=e.target;
+  if(t.id==="edProjSel"){ edOpen(t.value); return; }
+  if(t.id==="edAspect"){ edChange(d=>{ d.aspect=t.value; },false); return; }
+  if((t.id==="edAudFile"||t.dataset.audtrack)&&t.files[0]&&st.assets){ const f=t.files[0]; t.disabled=true; const track=t.dataset.audtrack||"sfx";
+    const type=/webm$/i.test(f.name)||/webm/.test(f.type)?"video/webm":"video/mp4";
+    try{ const r=await st.assets.upload(f,{type}); edChange(d=>{ d.audio.push({id:newId(),asset:r.id,name:f.name,track,start:+ED.t.toFixed(2),vol:0.8}); ED.selA=d.audio.length-1; ED.sel=-1; }); edInspector(); flash("音を足しました（再生位置に置きました）"); }
+    catch(err){ setErr(err&&err.code==="too_large"?"20MB を超えています。":err&&err.code==="unsupported_type"?"この形式は使えません。m4a・mp4・webm にしてください。":"音を上げられませんでした。"); t.disabled=false; } }
+});
+
+// ---------- 複数の編集・作業の記録・エージェント用の操作窓口（WebMCP もどき） ----------
+ED.pid=null; st.edits=[];
+function edProjects(){ return st.edits.slice().sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))); }
+function edOpen(id){ const p=st.edits.find(x=>x.id===id); ED.pid=id; ED.dirty=false; ED.remoteAt=""; ED.doc=p?JSON.parse(JSON.stringify(p)):edDefault(); delete ED.doc.id; ED.sel=-1; ED.t=0;
+  try{ localStorage.setItem("edPid",id); }catch(_){} if(curPage==="editor"&&ED.mounted){ edProjUI(); edTimeline(); edInspector(); edAudioUI(); edLog(); edDraw(0); } }
+function edOnList(list){ st.edits=list;
+  if(!ED.pid){ let want=null; try{ want=localStorage.getItem("edPid"); }catch(_){} const ps=edProjects(); ED.pid=(ps.find(p=>p.id===want)||ps[0]||{id:"main"}).id; }
+  const cur=st.edits.find(x=>x.id===ED.pid); if(cur){ const c=JSON.parse(JSON.stringify(cur)); delete c.id; edRemote(c); }
+  if(curPage==="editor"&&ED.mounted){ edProjUI(); edLog(); } }
+function edProjUI(){ const box=$("#edProj"); if(!box) return; const ps=edProjects(); const d=edDoc();
+  box.innerHTML=`<label class="note" for="edProjSel">編集</label><select id="edProjSel" style="width:auto">${(ps.length?ps:[{id:ED.pid||"main",title:"編集1"}]).map(p=>`<option value="${esc(p.id)}"${p.id===ED.pid?" selected":""}>${esc(p.title||p.id)}（${esc(p.id)}）</option>`).join("")}</select>
+  <button type="button" class="ghost small" data-ed="newproj">新しい編集</button>`; }
+function edLog(){ const box=$("#edLog"); if(!box) return; const L=(edDoc().log||[]).slice(-30);
+  box.innerHTML=L.length?`<ol class="edLogList">${L.map(x=>`<li><span class="mono note">${esc(String(x.at||"").slice(11,16))}</span> <b>${esc(x.by||"")}</b> ${esc(x.text||"")}</li>`).join("")}</ol>`:`<div class="note">まだ記録はありません。</div>`; }
+// --- エージェント用の操作（Chrome の拡張機能・WebMCP から呼ぶ）
+function apiGuard(){ if(!canWrite()) throw new Error("この表示では編集できません（共有データに書き込めません）"); }
+function apiLog(text,by){ const d=edDoc(); d.log=(d.log||[]).concat([{at:new Date().toISOString(),by:by||"エージェント",text:String(text).slice(0,200)}]).slice(-200); }
+const MM={
+  listProjects:()=>edProjects().map(p=>({id:p.id,title:p.title||"",clips:(p.clips||[]).length,updatedAt:p.updatedAt||""})),
+  openProject:({id})=>{ edOpen(String(id)); return MM.getProject(); },
+  newProject:({id,title})=>{ apiGuard(); const pid=String(id||("p"+Date.now().toString(36))).replace(/[^A-Za-z0-9_-]/g,"").slice(0,40)||"p1"; ED.pid=pid; ED.doc=Object.assign(edDefault(),{title:title||pid}); apiLog("新しい編集を作成"); edSave(); if(ED.mounted){ edProjUI(); edTimeline(); edInspector(); edLog(); } return {id:pid}; },
+  getProject:()=>{ const d=edDoc(); return {id:ED.pid,title:d.title,aspect:d.aspect,total:+edTotal().toFixed(2),clips:d.clips.map((c,i)=>Object.assign({index:i},c)),audio:d.audio}; },
+  listMaterials:()=>st.materials.filter(m=>m.img).map(m=>({id:m.id,img:m.img,title:m.title,rights:m.rights,check:m.check,inPackage:pkgIn(m.id)})),
+  listPackage:({archived}={})=>pkgItems(archived?"archived":"in").map(({p,m})=>({id:p.id,img:m.img||p.img||"",title:m.title||p.title||"",check:m.check||"",apply:m.apply||"",usedIn:pkgUses(m)})),
+  addToPackage:({id})=>{ if(!st.db||st.readOnly) throw new Error("この表示では書き込めません"); if(!matById(id)) throw new Error("その素材はありません"); pkgPut(String(id),"in"); return {ok:true}; },
+  archiveFromPackage:({id})=>{ if(!st.db||st.readOnly) throw new Error("この表示では書き込めません"); const uses=pkgUses(matById(id)); pkgPut(String(id),"archived"); return {ok:true,usedIn:uses}; },
+  restoreToPackage:({id})=>{ if(!st.db||st.readOnly) throw new Error("この表示では書き込めません"); pkgPut(String(id),"in"); return {ok:true}; },
+  listCuts:()=>st.cuts.map(c=>({asset:c.asset,label:c.label})),
+  listCameraWorks:()=>CAM.map(x=>({key:x.k,name:x.n,desc:x.d})),
+  addClip:(a)=>{ apiGuard(); const kind=a.kind||(a.img?"image":a.asset?"video":"text"); const c={id:newId(),kind,dur:+a.dur||1,trans:a.trans||"cut",textJa:a.textJa||"",textEn:a.textEn||"",title:a.title||""};
+    if(kind==="image"){ c.img=a.img; c.mono=!!a.mono; } if(kind==="video"){ c.asset=a.asset; c.in=+a.in||0; c.speed=+a.speed||1; } if(kind==="text"){ c.bg=a.bg||"black"; c.typing=!!a.typing; }
+    Object.assign(c,{z0:1,z1:1,x0:0,x1:0,y0:0,y1:0,rot0:0,rot1:0});
+    if(a.cam){ const p=CAM.find(x=>x.k===a.cam); if(p){ Object.assign(c,p.v); c.cam=p.k; } }
+    const d=edDoc(); const at=a.index==null?d.clips.length:Math.max(0,Math.min(d.clips.length,+a.index)); d.clips.splice(at,0,c); ED.sel=at;
+    apiLog(`カット${at+1}を追加：${c.title||c.textJa||kind}${a.cam?"（"+(CAM.find(x=>x.k===a.cam)||{}).n+"）":""}`); edSave(); if(ED.mounted){ edTimeline(); edInspector(); edLog(); edDraw(ED.t); } return {index:at}; },
+  updateClip:({index,patch})=>{ apiGuard(); const d=edDoc(); const c=d.clips[+index]; if(!c) throw new Error("そのカットはありません"); Object.assign(c,patch||{});
+    if(patch&&patch.cam){ const p=CAM.find(x=>x.k===patch.cam); if(p) Object.assign(c,p.v); }
+    apiLog(`カット${+index+1}を変更`); edSave(); if(ED.mounted){ edTimeline(); edInspector(); edLog(); edDraw(ED.t); } return {ok:true}; },
+  setCamera:({index,key})=>MM.updateClip({index,patch:{cam:key,ms:0,me:1}}),
+  moveClip:({from,to})=>{ apiGuard(); const d=edDoc(); const [c]=d.clips.splice(+from,1); d.clips.splice(+to,0,c); apiLog(`カット${+from+1}を${+to+1}番目へ移動`); edSave(); if(ED.mounted){ edTimeline(); edLog(); } return {ok:true}; },
+  removeClip:({index})=>{ apiGuard(); const d=edDoc(); d.clips.splice(+index,1); apiLog(`カット${+index+1}を削除`); edSave(); if(ED.mounted){ edTimeline(); edInspector(); edLog(); } return {ok:true}; },
+  addAudio:({asset,name,start,inPoint,len,vol,track})=>{ apiGuard(); edDoc().audio.push({id:newId(),asset,name:name||"音",track:AUD_TRACKS.includes(track)?track:undefined,start:+start||0,in:+inPoint||0,len:+len||0,vol:vol==null?0.8:+vol}); apiLog(`音を追加：${name||"音"}`); edSave(); if(ED.mounted){ edAudioUI(); edLog(); } return {ok:true}; },
+  note:({text})=>{ apiGuard(); apiLog(text); edSave(); if(ED.mounted) edLog(); return {ok:true}; },
+  play:({from}={})=>{ edPlay(from==null?undefined:+from); return {ok:true}; },
+  pause:()=>{ edStop(); return {t:ED.t}; },
+  seek:({t})=>{ if(ED.playing) edStop(); ED.t=+t||0; edSyncMedia(ED.t,false); edDraw(ED.t); return {t:ED.t}; },
+  exportVideo:()=>{ edExport(); return {started:true,seconds:+edTotal().toFixed(1)}; },
+};
+const MM_TOOLS=[
+  ["listProjects","編集の一覧",{}],["openProject","編集を開く",{id:{type:"string"}}],["newProject","新しい編集を作る",{id:{type:"string"},title:{type:"string"}}],
+  ["getProject","開いている編集の中身（カット・音）",{}],["listMaterials","使える写真の一覧（素材集めで画像のあるもの）",{}],["listCuts","使える動画の一覧（ビューワーの版）",{}],
+  ["listPackage","パッケージ（動画に使う素材の束）の一覧。archived:true でアーカイブの一覧",{archived:{type:"boolean"}}],
+  ["addToPackage","素材をパッケージに入れる（id は素材の番号）",{id:{type:"string"}}],
+  ["archiveFromPackage","素材をパッケージから外してアーカイブへ（データは消えない）",{id:{type:"string"}}],
+  ["restoreToPackage","アーカイブから戻す",{id:{type:"string"}}],
+  ["listCameraWorks","カメラワークの一覧",{}],
+  ["addClip","カットを足す。写真は img、動画は asset、文字カードは textJa。cam でカメラワーク",{kind:{type:"string",enum:["image","video","text"]},img:{type:"string"},asset:{type:"string"},title:{type:"string"},dur:{type:"number"},cam:{type:"string"},mono:{type:"boolean"},textJa:{type:"string"},textEn:{type:"string"},typing:{type:"boolean"},bg:{type:"string"},trans:{type:"string",enum:["cut","fade"]},index:{type:"number"},in:{type:"number"},speed:{type:"number"}}],
+  ["updateClip","カットの設定を変える（patch に変えたい項目）",{index:{type:"number"},patch:{type:"object"}}],
+  ["setCamera","カットのカメラワークを変える",{index:{type:"number"},key:{type:"string"}}],
+  ["moveClip","カットを移動",{from:{type:"number"},to:{type:"number"}}],["removeClip","カットを削除",{index:{type:"number"}}],
+  ["addAudio","音を足す（asset は動画か音のファイル。track は narr／bgm／sfx）",{asset:{type:"string"},name:{type:"string"},track:{type:"string",enum:["narr","bgm","sfx"]},start:{type:"number"},inPoint:{type:"number"},len:{type:"number"},vol:{type:"number"}}],
+  ["note","作業の記録に一言残す",{text:{type:"string"}}],
+  ["play","再生",{from:{type:"number"}}],["pause","一時停止",{}],["seek","再生位置へ移動",{t:{type:"number"}}],["exportVideo","動画に書き出す",{}],
+];
+window.movieMaker=Object.freeze(Object.assign({},MM,{tools:MM_TOOLS.map(t=>t[0])}));
+(function registerWebMCP(){ // Chrome の WebMCP（navigator.modelContext）があれば登録する
+  try{ const mc=navigator.modelContext; if(!mc) return;
+    const tools=MM_TOOLS.map(([name,description,props])=>({name:"movieMaker_"+name,description,inputSchema:{type:"object",properties:props},
+      execute:async(args)=>{ try{ const r=await MM[name](args||{}); return {content:[{type:"text",text:JSON.stringify(r)}]}; }catch(e){ return {content:[{type:"text",text:"エラー："+e.message}],isError:true}; } }}));
+    if(typeof mc.provideContext==="function") mc.provideContext({tools}); else if(typeof mc.registerTool==="function") tools.forEach(t=>mc.registerTool(t));
+  }catch(_){} })();
+async function agentRun(text){ let cmds; try{ cmds=JSON.parse(text); }catch(e){ return "JSON として読めません："+e.message; }
+  if(!Array.isArray(cmds)) cmds=[cmds]; const out=[];
+  for(const c of cmds){ const f=MM[c.tool]; if(!f){ out.push({tool:c.tool,error:"その操作はありません"}); continue; }
+    try{ out.push({tool:c.tool,result:await f(c.args||{})}); }catch(e){ out.push({tool:c.tool,error:e.message}); } }
+  return JSON.stringify(out,null,1); }
+function agentPanel(){ return `<details class="panel" id="agentBox"><summary><b>操作の窓口（Chrome の拡張機能・AI エージェント用）</b></summary>
+  <div class="note" style="margin:6px 0">ここに JSON で命令を書いて「実行」を押すと、編集を操作できます。例：<code>{"tool":"addClip","args":{"img":"…","dur":0.8,"cam":"barrel"}}</code>。複数なら配列で。<br>
+  使える操作：${MM_TOOLS.map(t=>`<code title="${esc(t[1])}">${t[0]}</code>`).join(" ")}<br>
+  WebMCP に対応したブラウザでは <code>movieMaker_…</code> という名前で同じ操作が登録されます。ページのスクリプトからは <code>window.movieMaker</code> でも呼べます。</div>
+  <textarea id="agentCmd" rows="4" aria-label="エージェントの命令（JSON）" placeholder='{"tool":"getProject"}'></textarea>
+  <div class="row" style="margin-top:6px"><button type="button" data-ed="agentrun">実行</button></div>
+  <pre id="agentOut" class="mono" style="white-space:pre-wrap;max-height:240px;overflow:auto;font-size:12px;margin:6px 0 0"></pre></details>`; }
+
+// ---------- 描画 ----------
+let curPage="top";
+function renderNav(){
+  const c={scenes:st.scenes.length, mat:st.materials.length};
+  $("#navList").innerHTML=PAGES.map(p=>`<a class="nav" href="#${p.id}"${p.id===curPage?' aria-current="page"':""}><span class="no">${p.no}</span>${esc(p.name)}${p.cnt&&st.ready?`<span class="cnt">${c[p.cnt]}</span>`:""}</a>`).join("");
+}
+// ---------- パッケージ（動画に使う素材の束）：素材集めと編集で共通。外すとアーカイブへ（論理削除） ----------
+function matById(id){ return st.materials.find(m=>m.id===id); }
+function pkgIn(id){ const p=st.pkg.find(x=>x.id===id); return !!p&&p.state==="in"; }
+function pkgItems(state){ const k=state==="in"?"addedAt":"archivedAt", dir=state==="in"?1:-1;
+  return st.pkg.filter(p=>p.state===state).sort((a,b)=>dir*String(a[k]||"").localeCompare(String(b[k]||""))).map(p=>({p,m:matById(p.id)||{}})); }
+function pkgUses(m){ if(!m||!m.img) return []; const out=[]; const projs=st.edits.map(p=>p.id===ED.pid&&ED.doc?Object.assign({},ED.doc,{id:p.id}):p);
+  if(ED.pid&&ED.doc&&!st.edits.some(p=>p.id===ED.pid)) projs.push(Object.assign({},ED.doc,{id:ED.pid}));
+  projs.forEach(p=>{ let a=0; (p.clips||[]).forEach((c,i)=>{ if(c.kind==="image"&&c.img===m.img) out.push(`${p.title||p.id}：${i+1}番目のカット（${fmt0(a)}〜）`); a+=Math.max(0.1,+c.dur||0); }); }); return out; }
+function pkgChk(m){ return `<label class="pkgChk"><input type="checkbox" data-pkgin="${esc(m.id)}"${pkgIn(m.id)?" checked":""}${st.db&&!st.readOnly?"":" disabled"}>パッケージ</label>`; }
+function pkgPanel(mode){ return `<aside class="pkg" id="pkgPanel" data-mode="${mode}" aria-label="パッケージ">${pkgInner(mode)}</aside>`; }
+function pkgInner(mode){
+  const ins=pkgItems("in"), arch=pkgItems("archived"), v=st.pkgView, can=st.db&&!st.readOnly;
+  let h=`<div class="pkgHd"><b>パッケージ</b><span class="note">${ins.length}点</span><span style="flex:1"></span><button type="button" class="ghost small" data-pkgview="${v==="arch"?"in":"arch"}">${v==="arch"?"← パッケージ":`アーカイブ ${arch.length}`}</button></div>`;
+  if(st.pkgAsk){ const a=st.pkgAsk; const m=matById(a.id)||{};
+    h+=`<div class="pkgAsk" role="alert"><b>「${esc(m.title||a.id)}」はタイムラインで使っています</b><ul>${a.uses.map(u=>`<li>${esc(u)}</li>`).join("")}</ul><span class="note">アーカイブに移しても、タイムラインのカットはそのまま残ります。</span><div class="row"><button type="button" class="danger small" data-pkgok="${esc(a.id)}">アーカイブに移す</button><button type="button" class="ghost small" data-pkgcancel="1">やめる</button></div></div>`; }
+  const warn=m=>(m.apply==="必要"?`<span class="chip ng">申請が要る</span> `:"")+(m.check&&m.check!=="確認済み"?`<span class="chip warn">権利 ${esc(m.check)}</span>`:"");
+  const thumb=(p,m)=>{ const img=m.img||p.img; return img?`<img src="/_blob/${esc(img)}" alt="" loading="lazy" draggable="false">`:`<span class="pkgNo">画像なし</span>`; };
+  const txt=(p,m)=>`<span class="pkgT"><b>${esc(m.title||p.title||p.id)}</b><span class="note">${esc([p.id,m.scene].filter(Boolean).join("・"))}</span>${warn(m)?`<span>${warn(m)}</span>`:""}</span>`;
+  if(v==="arch"){
+    h+=`<div class="note">パッケージから外したもの。「戻す」でパッケージに戻ります。</div>`;
+    h+=arch.length?`<div class="pkgList">${arch.map(({p,m})=>`<div class="pkgItem"><div class="pkgMain">${thumb(p,m)}${txt(p,m)}</div>${can?`<button type="button" class="small pkgBack" data-pkgback="${esc(p.id)}">戻す</button>`:""}</div>`).join("")}</div>`:`<div class="empty">アーカイブは空です。</div>`;
+    return h; }
+  h+=`<div class="note">${mode==="editor"?"押すと、選んでいるカットの後ろ（なければ最後）に置きます。× で外すとアーカイブへ移ります。":"素材の「パッケージ」にチェックを入れると、ここに並びます。× で外すとアーカイブへ移ります。"}</div>`;
+  h+=ins.length?`<div class="pkgList">${ins.map(({p,m})=>{ const img=m.img||p.img; const main=mode==="editor"&&img?`<button type="button" class="pkgMain" data-addimg="${esc(img)}" data-title="${esc(m.title||p.title||"")}" title="タイムラインに置く">${thumb(p,m)}${txt(p,m)}</button>`:`<div class="pkgMain">${thumb(p,m)}${txt(p,m)}</div>`;
+    return `<div class="pkgItem">${main}${can?`<button type="button" class="pkgX" data-pkgx="${esc(p.id)}" aria-label="「${esc(m.title||p.id)}」をパッケージから外す" title="外す（アーカイブへ）">×</button>`:""}</div>`; }).join("")}</div>`
+    :`<div class="empty">${mode==="editor"?"まだ空です。素材集めのページで「パッケージ」にチェックを入れてください。":"まだ空です。"}</div>`;
+  return h;
+}
+function pkgRefresh(){ const el=$("#pkgPanel"); if(el) el.innerHTML=pkgInner(el.dataset.mode); pkgNear.last&&pkgNear(pkgNear.last); }
+function pkgUpdate(){ if(curPage==="editor"&&ED.mounted){ pkgRefresh(); edLibrary(); } else if(curPage==="materials"){ render(); } }
+async function pkgPut(id,state){ const m=matById(id)||{}; const old=st.pkg.find(p=>p.id===id)||{}; const now=new Date().toISOString();
+  const doc={mid:id,title:m.title||old.title||id,img:m.img||old.img||"",state,addedAt:old.addedAt||now,archivedAt:state==="archived"?now:"",by:st.me||""};
+  return write(()=>st.db.collection("pkg").doc(id).set(doc),state==="in"?"パッケージに入れました":"アーカイブに移しました（「アーカイブ」から戻せます）"); }
+function pkgArchive(id,force){ const uses=pkgUses(matById(id)); if(uses.length&&!force){ st.pkgAsk={id,uses}; st.pkgView="in"; pkgRefresh(); if(curPage==="materials") render(); return; } st.pkgAsk=null; pkgPut(id,"archived"); }
+document.addEventListener("click",e=>{ const t=e.target.closest&&e.target.closest("[data-pkgx],[data-pkgback],[data-pkgview],[data-pkgok],[data-pkgcancel]"); if(!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if(t.dataset.pkgx){ pkgArchive(t.dataset.pkgx,false); return; }
+  if(t.dataset.pkgok){ pkgArchive(t.dataset.pkgok,true); return; }
+  if(t.dataset.pkgcancel){ st.pkgAsk=null; pkgRefresh(); if(curPage==="materials") render(); return; }
+  if(t.dataset.pkgback){ pkgPut(t.dataset.pkgback,"in"); return; }
+  if(t.dataset.pkgview){ st.pkgView=t.dataset.pkgview; pkgRefresh(); return; }
+},true);
+document.addEventListener("change",e=>{ const t=e.target; if(!t.dataset||!t.dataset.pkgin) return; const id=t.dataset.pkgin; t.blur();
+  if(t.checked) pkgPut(id,"in"); else pkgArchive(id,false); });
+// × はマウスやペンを近づけると出す（指は常に小さく表示）
+function pkgNear(pt){ pkgNear.last=pt; document.querySelectorAll("#pkgPanel .pkgX").forEach(b=>{ const r=b.getBoundingClientRect(); const d=Math.hypot(pt.x-(r.left+r.width/2),pt.y-(r.top+r.height/2)); b.classList.toggle("near",d<56); }); }
+document.addEventListener("pointermove",e=>{ if(e.pointerType==="touch") return; if(pkgNear.raf) return; const pt={x:e.clientX,y:e.clientY}; pkgNear.raf=requestAnimationFrame(()=>{ pkgNear.raf=0; pkgNear(pt); }); },{passive:true});
+function render(){
+  const p=PAGES.find(x=>x.id===curPage)||PAGES[0];
+  renderNav();
+  // 入力中の欄を守る：編集フォームやコメント欄にフォーカスがある間は本文を描き直さない
+  const ae=document.activeElement;
+  if(ae&&$("#view").contains(ae)&&(ae.tagName==="TEXTAREA"||(ae.tagName==="INPUT"&&ae.type!=="file"))){ deferred=true; const s=$("#liveStatus"); if(s&&!st.err) s.textContent=statusText(); return; }
+  if(p.id==="editor"&&ED.mounted&&!render.force){ edRefresh(); return; }
+  if(p.id!=="editor"&&ED.mounted){ if(ED.playing) edStop(); ED.mounted=false; }
+  if(p.id==="viewer"&&$("#vid")&&!render.force){ // 再生中の動画を止めないよう、動画以外だけ更新
+    const v=$("#vid"); const cut=curCut(); const want=st.localUrl||(cut&&cut.asset?"/_blob/"+cut.asset:"");
+    if(v.getAttribute("src")===want){ updateViewerSide(); return; }
+  }
+  render.force=false;
+  let body="";
+  if(p.id==="top") body=pageTop(); else if(p.id==="storyboard") body=pageStoryboard(); else if(p.id==="scenario") body=pageScenario(); else if(p.id==="materials") body=pageMaterials(); else if(p.id==="editor") body=pageEditor(); else body=pageViewer();
+  $("#view").innerHTML=head(p, p.id==="top"?"準備中":"")+body;
+  setErr(st.err);
+  if(p.id==="viewer"){ bindVideo(); }
+  if(p.id==="editor"){ edMount(); } else ED.mounted=false;
+  syncAnchoring(); if(p.id==="viewer") requestAnimationFrame(reportPlaced);
+}
+let deferred=false;
+function updateViewerSide(){
+  const tmp=document.createElement("div"); tmp.innerHTML=pageViewer();
+  const right=$("#view .viewer > div:last-child"), nr=tmp.querySelector(".viewer > div:last-child");
+  if(right&&nr) right.replaceWith(nr);
+  const tc=$("#view .viewer .tc"), ntc=tmp.querySelector(".viewer .tc"); if(tc&&ntc) tc.replaceWith(ntc);
+  ["#cmNote","#commentHere"].forEach(sel=>{ const a=$(sel), b=tmp.querySelector(sel); if(a&&b) a.replaceWith(b); });
+  setErr(st.err); reportPlaced();
+}
+document.addEventListener("focusout",()=>{ setTimeout(()=>{ if(deferred){ const ae=document.activeElement; if(!(ae&&$("#view").contains(ae)&&(ae.tagName==="TEXTAREA"||ae.tagName==="INPUT"))){ deferred=false; render(); } } },0); });
+
+function route(){ const h=(location.hash||"").slice(1); curPage=PAGES.some(p=>p.id===h)?h:"top"; render.force=true; deferred=false; render(); window.scrollTo(0,0); $("#side").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded","false"); }
+window.addEventListener("hashchange",route);
+$("#menuBtn").addEventListener("click",()=>{const o=$("#side").classList.toggle("open"); $("#menuBtn").setAttribute("aria-expanded",String(o));});
+
+// ---------- 操作 ----------
+window.addEventListener("resize",()=>{ if(curPage==="viewer") reportPlaced(); });
+document.addEventListener("click",e=>{ // コメントモード中はタイムラインを押した時刻にコメント。通常時はその時刻へ移動
+  const bar=e.target.closest&&e.target.closest("#tl"); if(!bar) return;
+  e.preventDefault(); e.stopPropagation();
+  const r=bar.getBoundingClientRect(); const t=Math.max(0,Math.min(TOTAL,(e.clientX-r.left)/r.width*TOTAL));
+  if(st.cmode&&st.ca&&curKey()) composeAt(t); else seek(t);
+},true);
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("button,a"); if(!t) return;
+  if(t.dataset.seek!=null){ seek(t.dataset.seek); return; }
+  if(t.dataset.scene&&t.tagName==="A"){ e.preventDefault(); st.sbSel=t.dataset.scene; if(curPage!=="storyboard") location.hash="storyboard"; else { render.force=true; render(); } return; }
+  if(t.dataset.sb){ st.sbSel=t.dataset.sb; render.force=true; render(); if(matchMedia("(max-width:900px)").matches){ const el=$(".sbDetail"); if(el) el.scrollIntoView({block:"start"}); } return; }
+  if(t.dataset.mf){ const k=t.dataset.mf, v=t.dataset.v; st.mf[k]=st.mf[k]===v?"すべて":v; render.force=true; render(); return; }
+  if(t.dataset.mfclear){ st.mf={group:"すべて",apply:"すべて",check:"すべて"}; render.force=true; render(); return; }
+  if(t.id==="commentHere"){ composeAt(st.cur); return; }
+  if(t.dataset.cut){ st.cutId=t.dataset.cut; if(st.localUrl){ URL.revokeObjectURL(st.localUrl); st.localUrl=""; } st.cur=0; render.force=true; render(); return; }
+  const act=t.dataset.act; if(!act) return;
+  if(act==="edit"){ st.editing[t.dataset.key]=true; render.force=true; deferred=false; document.activeElement&&document.activeElement.blur(); render(); return; }
+  if(act==="cancel"){ delete st.editing[t.dataset.key]; deferred=false; document.activeElement&&document.activeElement.blur(); render.force=true; render(); return; }
+});
+document.addEventListener("submit",async e=>{
+  const f=e.target; e.preventDefault();
+  if(f.dataset.form==="board"||f.dataset.form==="script"){
+    const id=f.dataset.id; const fd=new FormData(f); const patch={};
+    for(const [k,v] of fd.entries()){ if(typeof v==="string") patch[k]=v.trim(); }
+    if("tcIn" in patch&&patch.tcIn&&toSec(patch.tcIn)==null){ setErr("開始は 0:20 のように「分:秒」で入れてください。"); return; }
+    if("tcOut" in patch&&patch.tcOut&&toSec(patch.tcOut)==null){ setErr("終了は 0:35 のように「分:秒」で入れてください。"); return; }
+    patch.updatedAt=new Date().toISOString(); if(st.me) patch.updatedBy=st.me;
+    const ok=await write(()=>st.db.collection("scenes").doc(id).update(patch),"保存しました");
+    if(ok){ delete st.editing[(f.dataset.form==="board"?"b:":"s:")+id]; deferred=false; document.activeElement&&document.activeElement.blur(); render.force=true; render(); flash("保存しました"); }
+    return;
+  }
+  if(f.id==="cutForm"){
+    const file=$("#cutFile").files[0]; const label=$("#cutLabel").value.trim(); if(!file||!label) return;
+    if(file.size>20*1024*1024){ setErr("20MB を超えています。720p で書き出し直すか、「この端末の動画で見る」を使ってください。"); return; }
+    const btn=f.querySelector("button[type=submit]"); btn.disabled=true; btn.textContent="上げています…";
+    try{
+      const r=await st.assets.upload(file,{type:file.type==="video/webm"?"video/webm":"video/mp4"});
+      const ok=await write(()=>st.db.collection("cuts").add({label,memo:$("#cutMemo").value.trim(),asset:r.id,createdAt:new Date().toISOString(),by:st.me||""}));
+      if(ok){ $("#cutLabel").value=""; $("#cutMemo").value=""; $("#cutFile").value=""; st.cutId=null; flash("版を追加しました"); }
+    }catch(err){ const c=err&&err.code;
+      setErr(c==="too_large"?"20MB を超えています。720p で書き出し直してください。":c==="unsupported_type"?"MP4 か WebM の動画を選んでください。":c==="quota_or_state"?"保存容量の上限です。古い版を整理してください。":"動画を上げられませんでした。もう一度お試しください。"); }
+    btn.disabled=false; btn.textContent="上げる";
+    render.force=true; deferred=false; document.activeElement&&document.activeElement.blur(); render();
+  }
+});
+document.addEventListener("change",async e=>{
+  const t=e.target;
+  if(t.id==="mfGroup"||t.id==="mfApply"||t.id==="mfCheck"){ st.mf[{mfGroup:"group",mfApply:"apply",mfCheck:"check"}[t.id]]=t.value; t.blur(); render.force=true; render(); return; }
+  if(t.dataset.mfield){ const id=t.dataset.mid, k=t.dataset.mfield, v=t.value; t.blur(); await write(()=>st.db.collection("materials").doc(id).update({[k]:v}),"更新しました"); return; }
+  if(t.dataset.mimg&&t.files[0]&&st.assets){ const id=t.dataset.mimg, f=t.files[0];
+    try{ const r=await st.assets.upload(f,{type:/^image\/(png|jpeg|webp)$/.test(f.type)?f.type:"image/jpeg"}); await write(()=>st.db.collection("materials").doc(id).update({img:r.id}),"画像を貼りました"); }
+    catch(err){ setErr(err&&err.code==="too_large"?"画像が大きすぎます（20MB まで）。":"画像を上げられませんでした。PNG か JPEG を選んでください。"); }
+    return; }
+  if(t.id==="localFile"&&t.files[0]){ if(st.localUrl) URL.revokeObjectURL(st.localUrl); st.localUrl=URL.createObjectURL(t.files[0]); st.localName=t.files[0].name; st.cur=0; render.force=true; deferred=false; t.blur(); render(); return; }
+  if(t.dataset.frame&&t.files[0]&&st.assets){
+    const id=t.dataset.frame; const file=t.files[0];
+    try{ const r=await st.assets.upload(file,{type:/^image\/(png|jpeg|webp)$/.test(file.type)?file.type:"image/png"});
+      await write(()=>st.db.collection("scenes").doc(id).update({frame:r.id}),"コマ画像を貼りました"); }
+    catch(err){ setErr(err&&err.code==="too_large"?"画像が大きすぎます（20MB まで）。":"画像を上げられませんでした。PNG か JPEG を選んでください。"); }
+  }
+});
+
+applyProject();
+route();
+start();
+})();
+</script>
