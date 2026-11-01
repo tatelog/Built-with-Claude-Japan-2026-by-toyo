@@ -95,7 +95,7 @@ Claude は ArtifactData で直接書き込む。画面からも代表がタス�
 |---|---|
 | `meta/project` | name, subtitle, hubUrl, totalSec（既定 180）, summary, rules[] |
 | `meta/style` | title, points[], refs[{name,url,note}]（絵コンテ上段のトーン枠） |
-| `scenes/<id>` | order, tcIn, tcOut（"0:00"）, era, title, status（未着手／案／確定）, picture, onscreen, materials, shot, ref, frame（asset id）, line, narrationJa, subtitleEn ほか |
+| `scenes/<id>` | order, tcIn, tcOut（"0:00"）, era, title, status（未着手／案／確定）, picture, onscreen, materials, shot, ref, frame（asset id）, line, narrationJa, subtitleEn |
 | `materials/<id>` | order, group, title, url, source, rights, scene, apply（不要／必要／要確認／—）, check（確認済み／確認中／未着手）, status（候補／使う／使わない）, img, note, basis, credit |
 | `pkg/<素材 id>` | mid, title, img, state（in／archived）, addedAt, archivedAt, by（パッケージ） |
 | `cuts/<id>` | createdAt, label, asset（ビューワーの版） |
